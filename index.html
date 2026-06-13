@@ -1,0 +1,1464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Bali Journey · Ubud · June 17–23</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --jungle-dark:  #0C2016;
+      --leaf:         #4A8C5C;
+      --gold:         #C9A96E;
+      --gold-light:   #E8C87A;
+      --gold-dim:     rgba(201,169,110,.25);
+      --cream:        #F4EFE2;
+      --cream-dim:    rgba(244,239,226,.55);
+      --sig:   #C8980A;
+      --tmpl:  #8B3A18;
+      --fall:  #1482A0;
+      --act:   #C84420;
+      --eat:   #B84800;
+      --work:  #227A45;
+      --ntlf:  #7030A0;
+      --spa:   #B04878;
+      --dayc:  #15BFC4;
+    }
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    html, body { height:100%; font-family:'Inter',sans-serif; overflow:hidden; background:var(--jungle-dark); }
+
+    /* MAP */
+    #map { position:absolute; inset:0; }
+    .leaflet-container { background:#1B3A2D; }
+    .leaflet-control-zoom { display:none; }
+
+    /* HEADER */
+    #hdr {
+      position:absolute; top:0; left:0; right:0; z-index:900;
+      height:58px;
+      background:linear-gradient(180deg,rgba(12,32,22,.97) 0%,rgba(12,32,22,.75) 100%);
+      backdrop-filter:blur(14px);
+      border-bottom:1px solid var(--gold-dim);
+      display:flex; align-items:center; justify-content:space-between;
+      padding:0 20px;
+    }
+    #hdr-l { display:flex; align-items:center; gap:12px; }
+    .hdr-orb {
+      width:34px; height:34px; border-radius:50%;
+      background:linear-gradient(135deg,#7A5010,var(--gold));
+      display:flex; align-items:center; justify-content:center;
+      font-size:16px; box-shadow:0 0 12px rgba(201,169,110,.4);
+    }
+    .hdr-title { font-family:'Playfair Display',serif; font-size:19px; font-weight:700; color:var(--cream); letter-spacing:.3px; line-height:1; }
+    .hdr-sub   { font-size:10px; font-weight:600; letter-spacing:2.2px; text-transform:uppercase; color:var(--gold); margin-top:3px; }
+    .hdr-dates { font-size:11px; font-weight:300; color:var(--cream-dim); letter-spacing:.8px; }
+
+    /* SIDEBAR */
+    #leg {
+      position:absolute; top:72px; left:16px; z-index:800;
+      width:222px;
+      background:rgba(11,28,18,.93);
+      backdrop-filter:blur(18px);
+      border:1px solid var(--gold-dim);
+      border-radius:14px;
+      box-shadow:0 10px 36px rgba(0,0,0,.45);
+      display:flex; flex-direction:column;
+      max-height:calc(100vh - 100px);
+      overflow:hidden;
+    }
+    /* filter section */
+    #leg-filters { flex-shrink:0; }
+    #leg-fhdr {
+      padding:11px 16px 9px;
+      border-bottom:1px solid rgba(201,169,110,.12);
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    #leg-fhdr span { font-size:9.5px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--gold); }
+    #all-none { display:flex; gap:2px; }
+    .an-btn {
+      font-size:9px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase;
+      color:var(--gold); opacity:.55; cursor:pointer; padding:3px 7px;
+      border-radius:4px; transition:opacity .15s, background .15s;
+    }
+    .an-btn:hover { opacity:1; background:rgba(201,169,110,.12); }
+    .cf {
+      display:flex; align-items:center; gap:9px;
+      padding:8px 16px;
+      cursor:pointer;
+      border-bottom:1px solid rgba(255,255,255,.04);
+      transition:background .18s;
+      user-select:none;
+    }
+    .cf:hover { background:rgba(255,255,255,.05); }
+    .cf.off { opacity:.38; }
+    .cf-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+    .cf-name { font-size:11px; font-weight:500; color:var(--cream); flex:1; }
+    .cf-n    { font-size:10px; color:rgba(244,239,226,.35); }
+    .cf-sw   { width:26px; height:14px; background:rgba(255,255,255,.14); border-radius:7px; position:relative; transition:background .2s; flex-shrink:0; }
+    .cf:not(.off) .cf-sw { background:var(--leaf); }
+    .cf-sw::after { content:''; position:absolute; width:10px; height:10px; background:#fff; border-radius:50%; top:2px; left:2px; transition:transform .2s; }
+    .cf:not(.off) .cf-sw::after { transform:translateX(12px); }
+
+    /* tile list section */
+    #leg-tiles-wrap { flex:1; display:flex; flex-direction:column; min-height:0; border-top:1px solid rgba(201,169,110,.14); }
+    #leg-thdr {
+      flex-shrink:0;
+      padding:10px 16px 8px;
+      border-bottom:1px solid rgba(255,255,255,.06);
+    }
+    #leg-thdr span { font-size:9.5px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--gold); }
+    #leg-tiles { flex:1; overflow-y:auto; min-height:0; scrollbar-width:thin; scrollbar-color:rgba(201,169,110,.25) transparent; }
+    #leg-tiles::-webkit-scrollbar { width:4px; }
+    #leg-tiles::-webkit-scrollbar-track { background:transparent; }
+    #leg-tiles::-webkit-scrollbar-thumb { background:rgba(201,169,110,.3); border-radius:2px; }
+    .tile {
+      display:flex; align-items:center; gap:10px;
+      padding:8px 12px;
+      cursor:pointer;
+      border-bottom:1px solid rgba(255,255,255,.04);
+      transition:background .15s;
+    }
+    .tile:last-child { border-bottom:none; }
+    .tile:hover { background:rgba(255,255,255,.06); }
+    .tile-thumb {
+      width:52px; height:52px; border-radius:8px; flex-shrink:0;
+      background-size:cover; background-position:center;
+      background-color:rgba(255,255,255,.06);
+    }
+    .tile-info { flex:1; min-width:0; }
+    .tile-name { font-size:11px; font-weight:600; color:var(--cream); line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .tile-cat  { font-size:9px; font-weight:600; letter-spacing:.7px; text-transform:uppercase; margin-top:3px; opacity:.85; }
+
+    /* LAYER TOGGLE */
+    #ltog {
+      position:absolute; bottom:20px; right:16px; z-index:800;
+      background:rgba(11,28,18,.91);
+      backdrop-filter:blur(18px);
+      border:1px solid var(--gold-dim);
+      border-radius:12px; overflow:hidden;
+      box-shadow:0 6px 20px rgba(0,0,0,.35);
+    }
+    .lb { display:flex; align-items:center; gap:7px; padding:9px 14px; cursor:pointer; font-size:11px; font-weight:500; color:var(--cream-dim); border-bottom:1px solid rgba(255,255,255,.06); transition:background .18s, color .18s; }
+    .lb:last-child { border-bottom:none; }
+    .lb:hover { background:rgba(255,255,255,.06); }
+    .lb.on { color:var(--gold); }
+
+    /* BOTTOM PILL */
+    #pill {
+      position:absolute; bottom:20px; left:50%; transform:translateX(-50%);
+      z-index:800;
+      display:flex; align-items:center;
+      background:rgba(11,28,18,.92);
+      backdrop-filter:blur(16px);
+      border:1px solid var(--gold-dim);
+      border-radius:40px; padding:10px 22px;
+      box-shadow:0 4px 22px rgba(0,0,0,.45);
+      white-space:nowrap;
+    }
+    .pi { display:flex; align-items:center; gap:7px; }
+    .pi+.pi { padding-left:16px; margin-left:16px; border-left:1px solid rgba(255,255,255,.1); }
+    .pi-n { font-family:'Playfair Display',serif; font-size:17px; font-weight:700; color:var(--gold); }
+    .pi-l { font-size:11px; color:var(--cream-dim); }
+
+    /* MARKER LABEL */
+    .leaflet-tooltip.mk-label {
+      background:rgba(10,22,16,.9);
+      border:1px solid rgba(201,169,110,.4);
+      border-radius:5px;
+      color:#F0EADB;
+      font-family:'Inter',sans-serif;
+      font-size:10.5px; font-weight:600;
+      padding:2px 8px;
+      white-space:nowrap;
+      pointer-events:none !important;
+      transition:opacity .25s;
+      box-shadow:0 2px 8px rgba(0,0,0,.4);
+    }
+    .leaflet-tooltip.mk-label::before { display:none !important; }
+
+    /* POPUP */
+    .leaflet-popup-content-wrapper { padding:0 !important; border-radius:16px !important; overflow:hidden; border:none !important; box-shadow:0 20px 60px rgba(0,0,0,.55) !important; }
+    .leaflet-popup-content { margin:0 !important; width:340px !important; }
+    .leaflet-popup-tip-container { display:none; }
+    .leaflet-popup-close-button { color:#fff !important; top:8px !important; right:11px !important; font-size:19px !important; z-index:10; font-weight:400 !important; text-shadow:0 1px 4px rgba(0,0,0,.5); }
+
+    /* POPUP CARD */
+    .pc { width:340px; font-family:'Inter',sans-serif; }
+    .pc-hdr { padding:20px 18px 16px; position:relative; }
+    .pc-badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:20px; margin-bottom:8px; font-size:9px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; background:rgba(255,255,255,.22); color:#fff; }
+    .pc-title { font-family:'Playfair Display',serif; font-size:18px; font-weight:700; color:#fff; line-height:1.25; }
+
+    /* photo strip */
+    .pc-photos { display:flex; gap:6px; overflow-x:auto; scroll-snap-type:x mandatory; padding:0 14px 12px; background:inherit; scrollbar-width:none; }
+    .pc-photos::-webkit-scrollbar { display:none; }
+    .pc-photo {
+      flex-shrink:0; width:182px; height:118px; border-radius:9px;
+      scroll-snap-align:start;
+      background-size:cover; background-position:center;
+      background-color:rgba(0,0,0,.18);
+      position:relative; overflow:hidden;
+    }
+    /* shimmer while photo loads */
+    .pc-photo::after {
+      content:''; position:absolute; inset:0;
+      background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.08) 50%,transparent 100%);
+      background-size:200% 100%;
+      animation:shim 1.6s infinite;
+    }
+    .pc-photo.loaded::after { display:none; }
+    @keyframes shim { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+
+    .pc-body { background:#F9F6EF; padding:14px 16px 16px; }
+    .pc-desc { font-size:12.5px; color:#3A3A3A; line-height:1.65; margin-bottom:13px; }
+    .pc-grid { display:grid; grid-template-columns:1fr 1fr; gap:7px; margin-bottom:7px; }
+    .pc-stat { background:#EFEBE1; border-radius:9px; padding:9px 11px; }
+    .pc-stat-lbl { font-size:8.5px; font-weight:700; letter-spacing:1.1px; text-transform:uppercase; color:#7A6A55; margin-bottom:3px; }
+    .pc-stat-val { font-size:11.5px; font-weight:600; color:#1E1E1E; line-height:1.3; }
+
+    /* scooter row */
+    .pc-scooter { display:flex; align-items:center; gap:10px; padding:9px 11px; background:#EFEBE1; border-radius:9px; margin-bottom:7px; }
+    .pc-scooter.ok  { border-left:3px solid #2E7D32; }
+    .pc-scooter.ctn { border-left:3px solid #E65100; }
+    .pc-sc-ico { font-size:15px; flex-shrink:0; }
+    .pc-sc-text { flex:1; }
+    .pc-sc-lbl { font-size:8.5px; font-weight:700; letter-spacing:1.1px; text-transform:uppercase; color:#7A6A55; margin-bottom:2px; }
+    .pc-sc-val { font-size:11.5px; font-weight:600; line-height:1.3; }
+    .pc-scooter.ok  .pc-sc-val { color:#1B5E20; }
+    .pc-scooter.ctn .pc-sc-val { color:#BF360C; }
+
+    .pc-tip { display:flex; gap:9px; align-items:flex-start; padding:9px 11px; border-radius:9px; margin-bottom:7px; font-size:11.5px; line-height:1.55; }
+    .pc-tip.go   { background:#E6F4EA; color:#1B5E20; }
+    .pc-tip.warn { background:#FFF3E0; color:#BF360C; }
+    .pc-tip-ico  { font-size:13px; flex-shrink:0; margin-top:1px; }
+    .pc-maps {
+      display:flex; align-items:center; justify-content:center; gap:7px;
+      margin-top:10px; padding:10px 14px;
+      background:#EAF1FF; border-radius:9px;
+      color:#1A6BE0; font-size:11.5px; font-weight:600;
+      text-decoration:none; transition:background .15s;
+    }
+    .pc-maps:hover { background:#D4E4FF; }
+
+    /* MARKERS */
+    .vm { width:46px; height:46px; border-radius:50%; background:linear-gradient(135deg,#F4EFE2,#E8C87A); border:2.5px solid var(--gold); display:flex; align-items:center; justify-content:center; font-size:20px; box-shadow:0 4px 18px rgba(201,169,110,.55),0 0 0 6px rgba(201,169,110,.18); animation:vp 2.2s ease-in-out infinite; }
+    @keyframes vp { 0%,100%{box-shadow:0 4px 18px rgba(201,169,110,.55),0 0 0 6px rgba(201,169,110,.18);} 50%{box-shadow:0 4px 22px rgba(201,169,110,.8),0 0 0 11px rgba(201,169,110,.08);} }
+    .mp { width:36px; height:36px; border-radius:50% 50% 50% 0; transform:rotate(-45deg); display:flex; align-items:center; justify-content:center; box-shadow:0 4px 14px rgba(0,0,0,.4); border:2px solid rgba(255,255,255,.3); }
+    .mp span { transform:rotate(45deg); font-size:15px; line-height:1; }
+
+    /* ── ITINERARY PACKAGES PANEL ── */
+    #pkg {
+      position:absolute; top:72px; right:16px; z-index:810;
+      width:250px;
+      background:rgba(11,28,18,.94);
+      backdrop-filter:blur(18px);
+      border:1px solid var(--gold-dim);
+      border-radius:14px;
+      box-shadow:0 10px 36px rgba(0,0,0,.5);
+      display:flex; flex-direction:column;
+      max-height:calc(100vh - 188px);
+      overflow:hidden;
+    }
+    #pkg-hdr {
+      flex-shrink:0; cursor:pointer; user-select:none;
+      padding:11px 15px; display:flex; align-items:center; justify-content:space-between;
+      border-bottom:1px solid rgba(201,169,110,.14);
+    }
+    #pkg-hdr .ph-l { display:flex; align-items:center; gap:8px; }
+    #pkg-hdr .ph-ico { font-size:13px; }
+    #pkg-hdr .ph-ttl { font-size:9.5px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--gold); }
+    #pkg-caret { font-size:10px; color:var(--gold); opacity:.7; transition:transform .2s; }
+    #pkg.collapsed #pkg-caret { transform:rotate(-90deg); }
+    #pkg.collapsed #pkg-scroll, #pkg.collapsed #pkg-detail { display:none; }
+    #pkg-scroll { overflow-y:auto; min-height:0; scrollbar-width:thin; scrollbar-color:rgba(201,169,110,.25) transparent; }
+    #pkg-scroll::-webkit-scrollbar { width:4px; }
+    #pkg-scroll::-webkit-scrollbar-track { background:transparent; }
+    #pkg-scroll::-webkit-scrollbar-thumb { background:rgba(201,169,110,.3); border-radius:2px; }
+
+    .pk-sec-hdr { padding:10px 15px 5px; font-size:9px; font-weight:700; letter-spacing:1.6px; text-transform:uppercase; color:var(--gold-light); opacity:.6; }
+    .pk {
+      display:flex; align-items:center; gap:10px;
+      padding:7px 13px 7px 11px; cursor:pointer;
+      border-left:3px solid transparent;
+      transition:background .15s, border-color .15s;
+    }
+    .pk:hover { background:rgba(255,255,255,.05); }
+    .pk.active { background:rgba(201,169,110,.15); border-left-color:var(--gold); }
+    .pk-badge {
+      width:22px; height:22px; border-radius:6px; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center;
+      font-size:11px; font-weight:800; color:var(--jungle-dark);
+      background:linear-gradient(135deg,#7A5010,var(--gold-light));
+      box-shadow:0 1px 4px rgba(0,0,0,.4);
+    }
+    .pk-meta { flex:1; min-width:0; }
+    .pk-name { font-size:11.5px; font-weight:600; color:var(--cream); line-height:1.25; }
+    .pk-sub { font-size:9px; font-weight:500; letter-spacing:.3px; color:rgba(244,239,226,.5); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+    /* package detail card */
+    #pkg-detail { flex-shrink:0; display:none; border-bottom:1px solid rgba(201,169,110,.18); background:rgba(8,20,13,.55); }
+    #pkg-detail.show { display:block; }
+    .pd-hdr { display:flex; align-items:center; gap:9px; padding:11px 13px 8px; }
+    .pd-badge { width:26px; height:26px; border-radius:7px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; color:var(--jungle-dark); background:linear-gradient(135deg,#7A5010,var(--gold-light)); }
+    .pd-ttl { flex:1; min-width:0; }
+    .pd-name-l { font-family:'Playfair Display',serif; font-size:14px; font-weight:700; color:var(--cream); line-height:1.1; }
+    .pd-tier { font-size:8.5px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; color:var(--gold); margin-top:3px; }
+    .pd-close { font-size:14px; color:var(--cream-dim); cursor:pointer; padding:2px 6px; border-radius:5px; }
+    .pd-close:hover { background:rgba(255,255,255,.1); color:var(--cream); }
+    .pd-why { padding:0 14px 10px; font-size:10.5px; line-height:1.5; color:rgba(244,239,226,.72); font-style:italic; }
+    .pd-stops { padding:0 7px 10px; }
+    .pd-stop { display:flex; gap:9px; padding:6px; border-radius:7px; cursor:pointer; transition:background .15s; }
+    .pd-stop:hover { background:rgba(255,255,255,.06); }
+    .pd-num { width:18px; height:18px; border-radius:50%; flex-shrink:0; margin-top:1px; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:800; color:var(--jungle-dark); background:var(--gold-light); }
+    .pd-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; margin:5px 4px 0; }
+    .pd-stop-main { flex:1; min-width:0; }
+    .pd-stop-top { display:flex; align-items:baseline; justify-content:space-between; gap:6px; }
+    .pd-name { font-size:11px; font-weight:600; color:var(--cream); }
+    .pd-t { font-size:9.5px; font-weight:700; color:var(--gold-light); white-space:nowrap; }
+    .pd-note { font-size:9.5px; color:rgba(244,239,226,.5); margin-top:1px; line-height:1.35; }
+
+    /* numbered route pin badge */
+    .pk-num { position:absolute; top:-5px; right:-5px; width:18px; height:18px; border-radius:50%; background:var(--gold-light); color:var(--jungle-dark); font-size:10px; font-weight:800; display:flex; align-items:center; justify-content:center; box-shadow:0 1px 5px rgba(0,0,0,.5); border:1.5px solid #5A3800; }
+
+    @media (max-width:720px){ #pkg{ width:210px; } }
+
+    /* ── VISITED STATE ── */
+    .vk-badge { position:absolute; top:-5px; left:-5px; width:18px; height:18px; border-radius:50%; background:#2FAE5E; color:#fff; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; box-shadow:0 1px 5px rgba(0,0,0,.55); border:1.5px solid #0C2016; z-index:3; }
+    .mp-visited { filter:grayscale(.5) brightness(.92); }
+
+    .tile-tick { width:22px; height:22px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; color:rgba(244,239,226,.22); border:1.5px solid rgba(244,239,226,.18); cursor:pointer; transition:all .15s; }
+    .tile-tick:hover { border-color:#2FAE5E; color:#2FAE5E; transform:scale(1.1); }
+    .tile.visited .tile-tick { background:#2FAE5E; border-color:#2FAE5E; color:#fff; }
+    .tile.visited { opacity:.72; }
+    .tile.visited .tile-name { color:rgba(244,239,226,.5); text-decoration:line-through; text-decoration-color:rgba(244,239,226,.3); }
+    .tile.visited .tile-thumb { filter:grayscale(.6); }
+
+    .pc-visit { display:flex; align-items:center; justify-content:center; gap:8px; margin:2px 0 10px; padding:10px; border-radius:10px; cursor:pointer; font-size:12px; font-weight:600; color:var(--cream); background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); transition:background .15s,border-color .15s; }
+    .pc-visit:hover { background:rgba(47,174,94,.14); border-color:rgba(47,174,94,.45); }
+    .pc-visit .pcv-box { width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; border:1.5px solid rgba(244,239,226,.35); color:transparent; flex-shrink:0; }
+    .pc-visit.done { background:rgba(47,174,94,.18); border-color:#2FAE5E; color:#9FE6B8; }
+    .pc-visit.done .pcv-box { background:#2FAE5E; border-color:#2FAE5E; color:#fff; }
+
+    #hide-visited { display:flex; align-items:center; gap:9px; padding:9px 16px; cursor:pointer; border-top:1px solid rgba(201,169,110,.16); user-select:none; transition:background .15s; }
+    #hide-visited:hover { background:rgba(255,255,255,.05); }
+    #hide-visited .hv-ico { width:16px; height:16px; border-radius:50%; background:#2FAE5E; color:#fff; font-size:10px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    #hide-visited .hv-name { font-size:11px; font-weight:600; color:var(--cream); flex:1; }
+    #hide-visited .hv-n { font-size:10px; color:rgba(244,239,226,.4); }
+    #hide-visited.on .cf-sw { background:var(--leaf); }
+    #hide-visited.on .cf-sw::after { transform:translateX(12px); }
+
+    .pd-stop.visited .pd-name { text-decoration:line-through; color:rgba(244,239,226,.45); }
+    .pd-stop.visited .pd-num { background:#2FAE5E; color:#fff; }
+  </style>
+</head>
+<body>
+<div id="map"></div>
+
+<div id="hdr">
+  <div id="hdr-l">
+    <div class="hdr-orb">🌿</div>
+    <div>
+      <div class="hdr-title">Bali Journey</div>
+      <div class="hdr-sub">Ubud Expedition · June 2026</div>
+    </div>
+  </div>
+  <div class="hdr-dates">June 17 – 23 &nbsp;·&nbsp; 7 days &nbsp;·&nbsp; 54 places</div>
+</div>
+
+<div id="leg">
+  <div id="leg-filters">
+    <div id="leg-fhdr">
+      <span>Filter Map</span>
+      <div id="all-none">
+        <span class="an-btn" onclick="setAll(true)">All</span>
+        <span class="an-btn" onclick="setAll(false)">None</span>
+      </div>
+    </div>
+    <div class="cf" data-cat="signature" onclick="tog(this)">
+      <div class="cf-dot" style="background:var(--sig)"></div>
+      <span class="cf-name">Signature Sites</span><span class="cf-n">8</span><div class="cf-sw"></div>
+    </div>
+    <div class="cf" data-cat="temples" onclick="tog(this)">
+      <div class="cf-dot" style="background:var(--tmpl)"></div>
+      <span class="cf-name">Temples</span><span class="cf-n">7</span><div class="cf-sw"></div>
+    </div>
+    <div class="cf" data-cat="waterfalls" onclick="tog(this)">
+      <div class="cf-dot" style="background:var(--fall)"></div>
+      <span class="cf-name">Waterfalls</span><span class="cf-n">4</span><div class="cf-sw"></div>
+    </div>
+    <div class="cf" data-cat="activities" onclick="tog(this)">
+      <div class="cf-dot" style="background:var(--act)"></div>
+      <span class="cf-name">Activities</span><span class="cf-n">8</span><div class="cf-sw"></div>
+    </div>
+    <div class="cf" data-cat="eating" onclick="tog(this)">
+      <div class="cf-dot" style="background:var(--eat)"></div>
+      <span class="cf-name">Dining</span><span class="cf-n">7</span><div class="cf-sw"></div>
+    </div>
+    <div class="cf" data-cat="working" onclick="tog(this)">
+      <div class="cf-dot" style="background:var(--work)"></div>
+      <span class="cf-name">Working</span><span class="cf-n">2</span><div class="cf-sw"></div>
+    </div>
+    <div class="cf" data-cat="nightlife" onclick="tog(this)">
+      <div class="cf-dot" style="background:var(--ntlf)"></div>
+      <span class="cf-name">Bars & Nightlife</span><span class="cf-n">4</span><div class="cf-sw"></div>
+    </div>
+    <div class="cf" data-cat="spa" onclick="tog(this)">
+      <div class="cf-dot" style="background:var(--spa)"></div>
+      <span class="cf-name">Spa & Massage</span><span class="cf-n">10</span><div class="cf-sw"></div>
+    </div>
+    <div class="cf" data-cat="dayclub" onclick="tog(this)">
+      <div class="cf-dot" style="background:var(--dayc)"></div>
+      <span class="cf-name">Pools & Day Clubs</span><span class="cf-n">3</span><div class="cf-sw"></div>
+    </div>
+    <div id="hide-visited" onclick="toggleHideVisited()">
+      <span class="hv-ico">✓</span>
+      <span class="hv-name">Hide visited</span>
+      <span class="hv-n" id="hv-count">0</span>
+      <div class="cf-sw"></div>
+    </div>
+  </div>
+  <div id="leg-tiles-wrap">
+    <div id="leg-thdr"><span>All Locations</span></div>
+    <div id="leg-tiles"></div>
+  </div>
+</div>
+
+<div id="ltog">
+  <div class="lb on" id="lb-map" onclick="setLayer('map')">🗺&nbsp; Terrain</div>
+  <div class="lb"    id="lb-sat" onclick="setLayer('sat')">🛰&nbsp; Satellite</div>
+</div>
+
+<div id="pkg">
+  <div id="pkg-hdr" onclick="document.getElementById('pkg').classList.toggle('collapsed')">
+    <div class="ph-l"><span class="ph-ico">🧭</span><span class="ph-ttl">Itineraries</span></div>
+    <span id="pkg-caret">▾</span>
+  </div>
+  <div id="pkg-detail"></div>
+  <div id="pkg-scroll"><div id="pkg-list"></div></div>
+</div>
+
+<div id="pill">
+  <div class="pi"><span class="pi-n">54</span><span class="pi-l">places</span></div>
+  <div class="pi"><span class="pi-n">7</span><span class="pi-l">days</span></div>
+  <div class="pi"><span class="pi-n">9</span><span class="pi-l">categories</span></div>
+  <div class="pi"><span class="pi-n">Ubud</span><span class="pi-l">home base</span></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+/* ── MAP ─────────────────────────────────────────────── */
+const map = L.map('map',{ center:[-8.508,115.263], zoom:13, zoomControl:false });
+const tileVoyager = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{ attribution:'© OpenStreetMap · © CARTO', maxZoom:19 }).addTo(map);
+const tileSat     = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{ attribution:'© Esri', maxZoom:19 });
+let curLayer='map';
+function setLayer(t){
+  if(t===curLayer)return;
+  if(t==='sat'){map.removeLayer(tileVoyager);tileSat.addTo(map);}
+  else{map.removeLayer(tileSat);tileVoyager.addTo(map);}
+  curLayer=t;
+  document.getElementById('lb-map').classList.toggle('on',t==='map');
+  document.getElementById('lb-sat').classList.toggle('on',t==='sat');
+}
+
+/* ── CATEGORIES ──────────────────────────────────────── */
+const CAT = {
+  villa:     { color:'#C9A96E', grad:'linear-gradient(135deg,#6B4A10,#C9A96E)',         icon:'🏡', label:'Home Base'      },
+  signature: { color:'#C8980A', grad:'linear-gradient(135deg,#5A3800,#C8980A,#E8B820)', icon:'⭐', label:'Signature Site'  },
+  temples:   { color:'#8B3A18', grad:'linear-gradient(135deg,#3A1205,#8B3A18,#C04E22)', icon:'🛕', label:'Temple'          },
+  waterfalls:{ color:'#1482A0', grad:'linear-gradient(135deg,#053040,#1482A0,#22AAC8)', icon:'💧', label:'Waterfall'       },
+  activities:{ color:'#C84420', grad:'linear-gradient(135deg,#601000,#C84420,#EE6030)', icon:'⚡', label:'Activity'        },
+  eating:    { color:'#B84800', grad:'linear-gradient(135deg,#501800,#B84800,#D86018)', icon:'🍽', label:'Dining'          },
+  working:   { color:'#227A45', grad:'linear-gradient(135deg,#0A3018,#227A45,#35AA60)', icon:'💻', label:'Co-Working'      },
+  nightlife: { color:'#7030A0', grad:'linear-gradient(135deg,#2A0845,#7030A0,#9B50D0)', icon:'🍸', label:'Bars & Nightlife' },
+  spa:       { color:'#B04878', grad:'linear-gradient(135deg,#4A1030,#B04878,#D468A0)', icon:'💆', label:'Spa & Massage'    },
+  dayclub:   { color:'#15BFC4', grad:'linear-gradient(135deg,#054A50,#15BFC4,#46E0E0)', icon:'🏊', label:'Pools & Day Clubs' },
+};
+
+/* ── WIKIPEDIA PHOTO ENGINE ──────────────────────────── */
+// Uses the MediaWiki Action API (not REST API) with origin=* which
+// explicitly allows requests from file:// (null) origins.
+// All ~33 unique slugs are fetched in ONE batched request at startup.
+const WIKI_CACHE = {};
+
+function applyBg(el, url) {
+  el.style.backgroundImage = `url('${url}')`;
+  el.classList.add('loaded');
+}
+
+function applyAllCached() {
+  // tiles
+  LOCS.forEach(loc => {
+    const url = (loc.wikiSlugs||[]).map(s=>WIKI_CACHE[s]).find(Boolean);
+    if (!url) return;
+    document.querySelectorAll(`.tile-thumb[data-lid="${loc.id}"]`).forEach(el=>applyBg(el,url));
+  });
+  // any currently open popup
+  document.querySelectorAll('.pc-photo[data-slug]').forEach(div=>{
+    const url = WIKI_CACHE[div.dataset.slug];
+    if (url) applyBg(div, url);
+  });
+}
+
+async function preloadPhotos() {
+  const slugs = [...new Set(LOCS.flatMap(l=>l.wikiSlugs||[]))];
+  try {
+    const params = new URLSearchParams({
+      action:'query', prop:'pageimages', piprop:'thumbnail',
+      pithumbsize:'640', format:'json', origin:'*', redirects:'1',
+      titles: slugs.join('|')
+    });
+    const r = await fetch(`https://en.wikipedia.org/w/api.php?${params}`);
+    if (!r.ok) return;
+    const d = await r.json();
+    // store title → url
+    Object.values(d.query?.pages||{}).forEach(p=>{
+      if (p.thumbnail?.source) WIKI_CACHE[p.title] = p.thumbnail.source;
+    });
+    // map original slugs through redirects + normalisation
+    (d.query?.redirects  ||[]).forEach(rd=>{ if(WIKI_CACHE[rd.to])  WIKI_CACHE[rd.from] =WIKI_CACHE[rd.to];  });
+    (d.query?.normalized ||[]).forEach(n =>{  if(WIKI_CACHE[n.to])   WIKI_CACHE[n.from]  =WIKI_CACHE[n.to];   });
+    applyAllCached();
+  } catch(e) { console.warn('[photos]', e.message); }
+}
+
+/* ── LOCATION DATA ───────────────────────────────────── */
+const LOCS = [
+  {
+    id:'villa', cat:'villa', shortName:'Villa Kajeng',
+    name:'Your Villa — Jalan Kajeng 13',
+    coords:[-8.5073,115.2631],
+    wikiSlugs:['Ubud', 'Bali'],
+    desc:'Your Ubud home base on the most coveted street in town — steps from the Palace, Saraswati Temple, and the best restaurants. Jalan Kajeng is a quiet lane flanked by traditional compounds and fragrant frangipani.',
+    time:'—', costAUD:'Booked ✓',
+    scooter:{ ok:true, note:'Central Ubud — everything nearby on foot' },
+    go:'Return before dusk to catch the golden light over the garden', warn:null
+  },
+  {
+    id:'tegalalang', cat:'signature', shortName:'Tegalalang',
+    name:'Tegalalang Rice Terraces',
+    coords:[-8.4317,115.2780],
+    wikiSlugs:['Tegallalang', 'Subak_(irrigation)', 'Rice_paddy'],
+    desc:'Iconic UNESCO-recognised terraced paddies sculpted into the hillside north of Ubud, fed by the ancient subak irrigation system. The ridge at the top offers sweeping valley views. Home to the famous swings and local artisan stalls.',
+    time:'25 min drive', costAUD:'A$1.50–3 entry · A$5–15 activities',
+    scooter:{ ok:true, note:'Easy — standard paved road all the way' },
+    go:'Arrive by 7am — golden light, zero crowds, vendors still asleep',
+    warn:'Brutally crowded and hot after 10am. Hawkers become very aggressive midday.'
+  },
+  {
+    id:'campuhan', cat:'signature', shortName:'Campuhan Ridge',
+    name:'Campuhan Ridge Walk',
+    coords:[-8.5015,115.2489],
+    wikiSlugs:['Campuhan', 'Ubud', 'Bali'],
+    desc:'A 9 km trail along a dramatic grassy ridge above the confluence of two sacred rivers — open meadows, bamboo pockets, terraced fields and distant jungle. Ubud\'s best free experience and one of the few places to feel truly alone.',
+    time:'15 min walk from villa', costAUD:'Free',
+    scooter:{ ok:true, note:'Ride to Pura Gunung Lebah trailhead (5 min)' },
+    go:'Start at 6am for sunrise. The trail is utterly quiet and cool at that hour.',
+    warn:'Fully exposed with zero shade midday. Do NOT attempt after 9am in June. Bring 1 L+ water.'
+  },
+  {
+    id:'monkey-forest', cat:'signature', shortName:'Monkey Forest',
+    name:'Sacred Monkey Forest',
+    coords:[-8.5188,115.2594],
+    wikiSlugs:['Sacred_Monkey_Forest_Sanctuary', 'Crab-eating_macaque', 'Ubud'],
+    desc:'Ancient jungle sanctuary home to 700+ long-tailed macaques and three sacred Hindu temples. Moss-covered stone demons guard pathways beneath enormous banyan trees. Surprisingly atmospheric — nothing like a zoo.',
+    time:'15 min walk · 5 min drive', costAUD:'~A$8',
+    scooter:{ ok:true, note:'Easy — Jalan Monkey Forest is fully paved' },
+    go:'Late afternoon (4–5pm) has fewer tour groups and beautiful dappled light.',
+    warn:'Monkeys will aggressively snatch glasses, phones, bags, and water bottles. Never openly display food.'
+  },
+  {
+    id:'tirta-empul', cat:'signature', shortName:'Tirta Empul',
+    name:'Tirta Empul Holy Springs',
+    coords:[-8.4158,115.3156],
+    wikiSlugs:['Tirta_Empul', 'Tampaksiring', 'Balinese_Hinduism'],
+    desc:'Bali\'s holiest water temple, fed by sacred mountain springs. Pilgrims come daily to bathe in 14 ritual spouts as a purification rite. Genuinely moving whether you participate or observe.',
+    time:'35 min drive', costAUD:'~A$6.50 (entry + sarong)',
+    scooter:{ ok:true, note:'35 min via main road — steady traffic, straightforward' },
+    go:'Arrive by 7:30am to witness morning ceremonies before tour buses swarm at 9am.',
+    warn:'Aggressive vendors at the entrance. Bring your own sarong to avoid the rental hustle.'
+  },
+  {
+    id:'saraswati', cat:'temples', shortName:'Saraswati Temple',
+    name:'Pura Saraswati Temple',
+    coords:[-8.5080,115.2631],
+    wikiSlugs:['Nelumbo_nucifera', 'Ubud', 'Bali'],
+    desc:'Exquisite lotus-pond temple dedicated to the goddess of knowledge and the arts. Ornate red-brick Balinese carvings emerge from a mirror-still lotus pond. Evening Kecak and Legong dance performances fill the inner courtyard.',
+    time:'3 min walk from villa', costAUD:'Free · A$10 evening dance show',
+    scooter:{ ok:true, note:'Walking distance — scooter not needed' },
+    go:'Visit at golden hour (4–5pm) for reflections on the lotus pond. Evening show 7:30pm.',
+    warn:'Sarong required to enter. Dance performances sell out in June — reserve early the same morning.'
+  },
+  {
+    id:'ubud-palace', cat:'temples', shortName:'Ubud Palace',
+    name:'Ubud Palace — Puri Saren Agung',
+    coords:[-8.5067,115.2631],
+    wikiSlugs:['Ubud_Palace', 'Ubud', 'Balinese_architecture'],
+    desc:'The formal residence of the Ubud royal family at the absolute heart of town since 1917. Intricate stone carvings and tiered pavilions frame multiple ceremonial courtyards. The royal family still resides here — the palace is alive, not a museum.',
+    time:'3 min walk from villa', costAUD:'Free · A$10 dance performance',
+    scooter:{ ok:true, note:'Walking distance — central Ubud' },
+    go:'Evening dance shows begin at 7:30pm. Legong is the most beautiful; Kecak is the most visceral.',
+    warn:'Book evening performances the morning of — they sell out in June. Shoulders and knees must be covered.'
+  },
+  {
+    id:'goa-gajah', cat:'temples', shortName:'Goa Gajah',
+    name:'Goa Gajah — Elephant Cave',
+    coords:[-8.5192,115.2869],
+    wikiSlugs:['Goa_Gajah', 'Bali', 'Hindu_temple'],
+    desc:'A 9th-century archaeological complex with a cave sanctuary entered through a terrifying carved demon mouth. Ancient Hindu and Buddhist statuary, bathing pools, and a jungle ravine path leading to hidden shrines. Deeply underrated.',
+    time:'15 min drive', costAUD:'~A$6.50 (entry + sarong)',
+    scooter:{ ok:true, note:'Easy — main road, well-signed' },
+    go:'Combine with Tirta Empul for a full eastern-Ubud heritage day. Arrive by 8am.',
+    warn:'Steep uneven paths inside. Hire a guide (A$8) — without one you miss 70% of what makes it extraordinary.'
+  },
+  {
+    id:'gunung-lebah', cat:'temples', shortName:'Gunung Lebah',
+    name:'Pura Gunung Lebah',
+    coords:[-8.5030,115.2508],
+    wikiSlugs:['Ubud', 'Campuhan', 'Bali'],
+    desc:'One of Ubud\'s oldest temples, perched above the sacred confluence of the Campuhan and Wos rivers. Tiered shrines descend into the gorge, surrounded by dense jungle. The sound of the rivers below is constant and calming.',
+    time:'15 min walk · 5 min drive', costAUD:'Free (donation welcomed)',
+    scooter:{ ok:true, note:'5 min ride to base of Campuhan hill' },
+    go:'Pair directly with the Campuhan Ridge Walk — the trailhead starts above the temple.',
+    warn:'Closed to visitors on ceremony days. Check locally before you go.'
+  },
+  {
+    id:'kanto-lampo', cat:'waterfalls', shortName:'Kanto Lampo',
+    name:'Kanto Lampo Waterfall',
+    coords:[-8.5153,115.3170],
+    wikiSlugs:['Waterfall', 'Ubud', 'Bali'],
+    desc:'Terraced volcanic waterfall cascading over black lava-rock shelves into a series of clear pools. Less visited than Tegenungan — more intimate, more photogenic, more adventurous. The geology is remarkable.',
+    time:'25 min drive', costAUD:'~A$2',
+    scooter:{ ok:true, note:'Narrow road final 500m — manageable at low speed', caution:true },
+    go:'Morning (8–10am) for the best light and fewest visitors. Bring a change of clothes for swimming.',
+    warn:'Requires scrambling over wet volcanic rocks. Wear grip sandals — not flip-flops. Avoid after heavy rain when currents surge.'
+  },
+  {
+    id:'tegenungan', cat:'waterfalls', shortName:'Tegenungan',
+    name:'Tegenungan Waterfall',
+    coords:[-8.5606,115.2909],
+    wikiSlugs:['Tegenungan_Waterfall', 'Waterfall', 'Ubud'],
+    desc:'A wide, thundering cascade into a turquoise pool set in dense jungle. Bali\'s most accessible waterfall and arguably its most dramatic. The mist on a hot morning is a full sensory reset.',
+    time:'25 min drive', costAUD:'A$2–3',
+    scooter:{ ok:true, note:'Easy ride — well-paved road all the way' },
+    go:'Arrive before 7:30am or after 4pm to beat the crowds. Combine with Kanto Lampo (15 min apart).',
+    warn:'Extremely crowded 10am–3pm in June. Strong undercurrent directly at the base — swim in shallower areas.'
+  },
+  {
+    id:'tibumana', cat:'waterfalls', shortName:'Tibumana & Suwat',
+    name:'Tibumana & Suwat Waterfalls',
+    coords:[-8.4741,115.3131],
+    wikiSlugs:['Waterfall', 'Ubud', 'Indonesia'],
+    desc:'Twin waterfalls in the same remote river canyon, only 5 minutes apart. Tibumana is wide and misty with a lagoon-like pool; Suwat is narrower and fiercer with a deep emerald plunge. Far less commercial — still genuinely wild.',
+    time:'40 min drive', costAUD:'~A$4 total (both falls)',
+    scooter:{ ok:true, note:'Rough gravel final 1km — go slow', caution:true },
+    go:'Morning. Both done comfortably in 2–3 hours. Pack a picnic for the rocks.',
+    warn:'Path to Suwat involves steep stone steps and narrow jungle trail. Slippery when wet — not suitable in sandals.'
+  },
+  {
+    id:'mount-batur', cat:'activities', shortName:'Mt. Batur Trek',
+    name:'Mount Batur Sunrise Trek',
+    coords:[-8.2414,115.3759],
+    wikiSlugs:['Mount_Batur', 'Lake_Batur', 'Kintamani'],
+    desc:'The crown jewel. An active volcano rising 1717m above a vast caldera lake. The 2-hour pre-dawn ascent through lava fields and cloud forest delivers a sunrise above the clouds you will remember for the rest of your life.',
+    time:'1.5 hr drive + 2 hr hike · leave villa 2am', costAUD:'A$78–124 incl. mandatory guide',
+    scooter:{ ok:true, note:'90 min mountain road — experienced riders only. Consider pre-booked transfer.', caution:true },
+    go:'Do not miss this. Leave the villa at 2am to summit by 5:15am. Bring a fleece — it is cold at the top.',
+    warn:'Book a reputable guide service 24 hrs ahead. The "guide mafia" at base camp is aggressive and predatory — pre-booking bypasses them entirely.'
+  },
+  {
+    id:'atv', cat:'activities', shortName:'ATV Ride',
+    name:'ATV Jungle & Rice Paddy Ride',
+    coords:[-8.4200,115.2550],
+    wikiSlugs:['All-terrain_vehicle', 'Ubud', 'Bali'],
+    desc:'Off-road ATV adventure through Ubud\'s rice paddies, river crossings, jungle trails and traditional Balinese villages. High-adrenaline fun with extraordinary scenery.',
+    time:'30 min drive', costAUD:'A$62–108 for 1–2 hour tours',
+    scooter:{ ok:true, note:'Easy ride to operator — standard paved road' },
+    go:'Morning sessions (8–10am) are cooler and muddier — much more fun.',
+    warn:'Wear clothes you can ruin. Very muddy. Reputable operators: Bali ATV Adventure, Mason Adventures. Book ahead in June.'
+  },
+  {
+    id:'tubing', cat:'activities', shortName:'River Tubing',
+    name:'Ayung River Tubing',
+    coords:[-8.4886,115.2361],
+    wikiSlugs:['Ayung_River', 'White-water_rafting', 'Ubud'],
+    desc:'Float the sacred Ayung River through jungle gorges past stone-carved reliefs, rice terraces, and cascading side-falls on inflatable tubes. Grade 2 rapids. Refreshing, photogenic, and strangely peaceful.',
+    time:'25 min drive', costAUD:'A$39–62 (life vests + helmets included)',
+    scooter:{ ok:true, note:'Easy — paved road to launch point' },
+    go:'Morning sessions are best for river conditions and temperature. Sunscreen essential.',
+    warn:'Confirm water levels the day before — after heavy rain the Ayung runs high and fast.'
+  },
+  {
+    id:'tanatap', cat:'activities', shortName:'Tanatap Wellness',
+    name:'Tanatap Wellness — Sauna & Ice Bath',
+    coords:[-8.5100,115.2610],
+    wikiSlugs:['Sauna', 'Cold_water_immersion', 'Ubud'],
+    desc:'Boutique cold exposure and contrast therapy studio in central Ubud. Finnish sauna, ice plunge baths, and optional breathwork sessions in a beautifully designed, intimate space. Ideal for active recovery.',
+    time:'10 min walk from villa', costAUD:'A$25–50 per session',
+    scooter:{ ok:true, note:'Walking distance from villa' },
+    go:'Schedule the day after Mount Batur or ATV for maximum recovery benefit.',
+    warn:'Book in advance — fills quickly in peak season. Do NOT schedule immediately before the Batur hike.'
+  },
+  {
+    id:'green-tara', cat:'activities', shortName:'Green Tara Spa',
+    name:'Green Tara Spa',
+    coords:[-8.5075,115.2645],
+    wikiSlugs:['Massage', 'Spa', 'Ubud'],
+    desc:'Acclaimed traditional Balinese spa set in a lush jungle garden. Full-body Balinese massage, volcanic-ash body scrubs, and signature flower baths in sunken stone tubs with fresh tropical blooms. The definitive Ubud spa ritual.',
+    time:'5 min walk from villa', costAUD:'A$20–60 per treatment',
+    scooter:{ ok:true, note:'Walking distance from villa' },
+    go:'Late afternoon or evening — the perfect ritual to close a full day of sightseeing.',
+    warn:'Several copycat "Green Tara" signs exist on Jalan Kajeng. Confirm reviews before booking the right one.'
+  },
+  {
+    id:'wedja', cat:'eating', shortName:'Wedja Restaurant',
+    name:'Wedja Restaurant',
+    coords:[-8.5085,115.2628],
+    wikiSlugs:['Balinese_cuisine', 'Indonesian_cuisine', 'Ubud'],
+    desc:'Stunning open-air restaurant built into the Ubud jungle canopy, with sweeping views across the treetops and valley. Exceptional Balinese and Indonesian cuisine — creative, refined, rooted in local ingredients.',
+    time:'5 min walk from villa', costAUD:'A$10–25 per person',
+    scooter:{ ok:true, note:'Walking distance — no need to ride' },
+    go:'Book a dinner reservation for sunset views (6:30pm is the magic time). Try bebek betutu and the black rice dessert.',
+    warn:'Reserve in advance for dinner in June — this fills every night in peak season.'
+  },
+  {
+    id:'wyah', cat:'working', shortName:'WYAH Space',
+    name:'WYAH Art & Creative Space',
+    coords:[-8.5090,115.2620],
+    wikiSlugs:['Coworking_space', 'Digital_nomad', 'Ubud'],
+    desc:'Vibrant creative co-working studio in central Ubud — fast WiFi, exceptional coffee, rotating gallery shows, and a cast of digital nomads, writers, and artists. Private pods, print facilities, and a curated design library.',
+    time:'5 min walk from villa', costAUD:'A$8–15 day pass (coffee included)',
+    scooter:{ ok:true, note:'Walking distance — central Ubud' },
+    go:'Arrive by 8am on weekdays for the best natural-light seats and fastest WiFi.',
+    warn:'WiFi slows with 15+ users. Arriving early is the difference between a productive morning and a frustrating one.'
+  },
+
+  /* ── NEW SIGNATURE SITES ── */
+  { id:'kajeng-walk', cat:'signature', shortName:'Kajeng Rice Walk',
+    name:'Kajeng Rice Field Walk',
+    coords:[-8.5058,115.2665],
+    wikiSlugs:['Subak_(irrigation)', 'Ubud', 'Bali'],
+    desc:'The best-kept secret walk in Ubud — 5 minutes from your villa but almost entirely crowd-free. A loop through the working Subak irrigation system with an optional jungle trail extension and hidden waterfall. Genuinely local, zero tourist infrastructure. Takes about 90 minutes.',
+    time:'5 min walk from villa', costAUD:'Free',
+    scooter:{ok:true, note:'Walking distance from villa — no scooter needed'},
+    go:'Start by 7am for morning mist and solitude. Look for the "Subak Juwuk Manis" sign between the Palace and Saraswati Temple.',
+    warn:'No vendors on trail — bring water. The jungle extension gets muddy after rain. Easy to get briefly lost, which is half the fun.' },
+  { id:'bukit-cinta', cat:'signature', shortName:'Bukit Cinta',
+    name:'Bukit Cinta — Love Hill',
+    coords:[-8.5100,115.4350],
+    wikiSlugs:['Mount_Agung', 'Bali', 'Ubud'],
+    desc:'A hillside viewpoint with one of the most unobstructed full-face views of Mount Agung in Bali — the volcano rises dramatically above a foreground of rice fields and jungle. June\'s dry-season clarity makes Agung unmissable. Small coffee kiosk on-site and utterly peaceful atmosphere.',
+    time:'45 min drive east', costAUD:'~A$0.50 entry',
+    scooter:{ok:true, note:'45 min mountain road east — experienced riders; arrange a driver if preferred', caution:true},
+    go:'Best for sunrise and early morning when Agung stands sharp and cloudless. June dry season is peak visibility.',
+    warn:'No Grab/Gojek service. Arrange a private driver or rent a scooter. Road east becomes winding past Klungkung.' },
+  { id:'sidemen', cat:'signature', shortName:'Sidemen Valley',
+    name:'Sidemen Valley — Day Trip',
+    coords:[-8.5060,115.4570],
+    wikiSlugs:['Sidemen', 'Mount_Agung', 'Bali'],
+    desc:'If Tegalalang is the postcard, Sidemen is the real thing. Wide-open rice terraces framed directly by the full face of Mount Agung — more dramatic than anything around Ubud. Almost no tourist infrastructure. Walk freely through working paddies, visit traditional weaving cooperatives.',
+    time:'1.5 hr drive east', costAUD:'Free (small donations at some field entrances)',
+    scooter:{ok:true, note:'1.5 hr mountain road — experienced riders only. Private driver is far more comfortable.', caution:true},
+    go:'Clear mornings in June are perfect — Agung visibility is at its best in dry season. Combine with Klungkung on the return.',
+    warn:'A full-day commitment. Leave early. Arrange a driver and make a day of East Bali — it\'s worth the drive.' },
+
+  /* ── NEW TEMPLES ── */
+  { id:'gunung-kawi', cat:'temples', shortName:'Gunung Kawi',
+    name:'Pura Gunung Kawi — Royal Shrines',
+    coords:[-8.4010,115.3159],
+    wikiSlugs:['Gunung_Kawi', 'Tampaksiring', 'Bali'],
+    desc:'Ten royal shrines — each approximately 8 metres tall — carved directly into vertical cliff walls flanking the sacred Pakerisan River. Dating to the 11th century. The descent through lush rice terraces to the river valley is spectacular. One of the most visually arresting ancient sites in Bali, far less crowded than Tirta Empul.',
+    time:'40 min drive', costAUD:'~A$5 + sarong',
+    scooter:{ok:true, note:'40 min ride — main road all the way'},
+    go:'Arrive by 8am. Pair with Tirta Empul (10 min away) and Sebatu for a full Tampaksiring heritage day.',
+    warn:'~300 steep steps down to the valley and back up. Wear comfortable shoes. Sarong required.' },
+  { id:'sebatu', cat:'temples', shortName:'Gunung Kawi Sebatu',
+    name:'Pura Gunung Kawi Sebatu',
+    coords:[-8.4241,115.2997],
+    wikiSlugs:['Ubud', 'Bali', 'Water_temple'],
+    desc:'Bali\'s most serene and undervisited temple. Spring-fed pools with crystal-clear water where locals perform daily purification rituals. Tropical courtyards dense with frangipani. Virtually no tourist crowds. The atmosphere is what Bali promises but rarely delivers at the famous spots.',
+    time:'20 min drive north', costAUD:'~A$3 (sarong provided free)',
+    scooter:{ok:true, note:'Easy 20 min ride north via Tegalalang road'},
+    go:'Pair as a short detour with Tegalalang Rice Terraces (10 min away). Open 8am–6pm.',
+    warn:'Closed during major Balinese ceremonies — check locally. Shoulders and knees must be covered.' },
+  { id:'yeh-pulu', cat:'temples', shortName:'Yeh Pulu',
+    name:'Yeh Pulu Rock Relief',
+    coords:[-8.5224,115.2916],
+    wikiSlugs:['Yeh_Pulu', 'Bali', 'Rock_art'],
+    desc:'A 25-metre-long relief carved directly into a cliff face in the 14th century — hunting scenes, daily Balinese life, mythological figures. One of the most undervisited archaeological sites in Bali. You walk through rice fields to reach it. No queues, no crowds — just 80 feet of medieval stone carving.',
+    time:'15 min drive', costAUD:'~A$3 (sarong included)',
+    scooter:{ok:true, note:'Easy 15 min ride — close to Goa Gajah, pair the two'},
+    go:'Combine with Goa Gajah (5 min away) for a morning archaeological double. Takes 30–45 min.',
+    warn:'Open 8am–5pm. Guides aren\'t always available — read up on the carvings beforehand to get the most from the site.' },
+
+  /* ── NEW WATERFALL ── */
+  { id:'tukad-cepung', cat:'waterfalls', shortName:'Tukad Cepung',
+    name:'Tukad Cepung Waterfall',
+    coords:[-8.4344,115.3433],
+    wikiSlugs:['Waterfall', 'Bali', 'Ubud'],
+    desc:'Unlike any other waterfall in Bali. Tucked inside a narrow cave canyon — between 9–11am the sun shoots laser-like light beams through the rock opening into the mist, creating ethereal rainbow effects. Genuinely surreal. Growing in fame but still uncrowded at opening time.',
+    time:'45 min drive northeast', costAUD:'~A$3',
+    scooter:{ok:true, note:'45 min ride northeast — main road for most of the journey'},
+    go:'The light beams only appear 9–11am. Arrive by 9am sharp — the effect vanishes mid-morning.',
+    warn:'Steep stone stairs on descent. Wear shoes you can get wet. Avoid after heavy rainfall when the canyon floods.' },
+
+  /* ── NEW ACTIVITIES ── */
+  { id:'beji-guwang', cat:'activities', shortName:'Beji Guwang Canyon',
+    name:'Beji Guwang Hidden Canyon',
+    coords:[-8.5744,115.2865],
+    wikiSlugs:['Canyon', 'Bali', 'Indonesia'],
+    desc:'A river canyon carved by centuries of water erosion — you wade chest-deep through cool water, climb over rocks, and discover hidden pools as the walls close in around you. Genuinely exploratory. Feels like discovery rather than tourism. A completely different texture from waterfall or jungle hikes.',
+    time:'30 min drive south', costAUD:'~A$20 (includes guide + locker + water)',
+    scooter:{ok:true, note:'Easy 30 min ride south via main road'},
+    go:'Open 8:30am–4:30pm. Book a guide in advance. Best experienced with a small group.',
+    warn:'Not suitable during wet season. Wear water shoes. Skip if you have knee issues.' },
+  { id:'kecak-dance', cat:'activities', shortName:'Kecak Fire Dance',
+    name:'Kecak Fire & Trance Dance',
+    coords:[-8.5052,115.2657],
+    wikiSlugs:['Kecak', 'Bali', 'Dance'],
+    desc:'50+ men chanting in interlocking rhythms — no instruments, just voice — building to a visceral trance crescendo with a fire-walking finale in darkness. At Pura Dalem Taman Kaja (a real working temple), it\'s far more immersive than the Ubud Palace version. One of those cultural experiences that genuinely stays with you.',
+    time:'5 min walk from villa', costAUD:'~A$10',
+    scooter:{ok:true, note:'Walking distance from villa'},
+    go:'Wed and Sat evenings ~7pm (verify on arrival). Arrive 30–45 min early for front seats.',
+    warn:'Verify schedule on arrival — performance days can shift. The darkness and chanting are intense. In the best possible way.' },
+  { id:'firefly-tour', cat:'activities', shortName:'Firefly Night Tour',
+    name:'Firefly Village Night Tour',
+    coords:[-8.4194,115.2597],
+    wikiSlugs:['Firefly', 'Bali', 'Ubud'],
+    desc:'Cook a traditional Balinese meal with a local family on an organic farm, eat together, tour their compound, then walk out into dark rice paddies to watch thousands of fireflies illuminate the fields. Genuinely magical and completely unlike anything else on the island.',
+    time:'25 min drive', costAUD:'~A$35–50 per person (includes dinner)',
+    scooter:{ok:true, note:'Operator usually provides transport — confirm on booking'},
+    go:'Book 3–4 days in advance. June dry season is perfect — clear skies and active paddies.',
+    warn:'Limited nightly availability — do not leave booking to the day. Bring insect repellent and long sleeves.' },
+
+  /* ── NEW DINING ── */
+  { id:'sayan-house', cat:'eating', shortName:'The Sayan House',
+    name:'The Sayan House',
+    coords:[-8.4978,115.2435],
+    wikiSlugs:['Ayung_River', 'Ubud', 'Bali'],
+    desc:'A veranda cantilevered directly over the Ayung River gorge — one of the most dramatically positioned restaurants in Bali. Japanese-Latin fusion menu. Equally stunning at golden hour or under cloud. Featured on every Ubud "best views" list. Arrive for the cocktails, stay for the food.',
+    time:'10 min drive west', costAUD:'A$20–40 per person · cocktails A$12–18',
+    scooter:{ok:true, note:'Easy 10 min ride west toward Sayan village'},
+    go:'Book ahead for a sunset table. Arrive 30 min before sunset for the bar first. Call the day before — or earlier in June.',
+    warn:'Fills every evening in June. Walk-ins turned away at weekends. Reserve in advance — non-negotiable.' },
+  { id:'rusters', cat:'eating', shortName:'RÜSTERS',
+    name:'RÜSTERS — Bakery, Roastery & Sunset Bar',
+    coords:[-8.5414,115.2630],
+    wikiSlugs:['Ubud', 'Bali', 'Coffee_roasting'],
+    desc:'Ubud\'s most talked-about multi-concept space: Danish-chef-led bakery, specialty coffee roastery, pottery studio, furniture showroom, and a west-facing sunset bar overlooking active rice fields. One of those rare places that does everything well. Late-afternoon light across the paddies is exceptional.',
+    time:'10 min drive south', costAUD:'Coffee A$5–8 · meals A$10–25',
+    scooter:{ok:true, note:'Easy 10 min ride south toward Kengetan'},
+    go:'Arrive ~4:30pm for sunset. Morning coffee is excellent and quiet. Pottery classes bookable on-site.',
+    warn:'Sunset seating fills fast in June — reserve for evening. Walk-ins fine for morning coffee and bakery.' },
+  { id:'yellow-flower', cat:'eating', shortName:'Yellow Flower Cafe',
+    name:'Yellow Flower Cafe',
+    coords:[-8.5018,115.2458],
+    wikiSlugs:['Penestanan', 'Ubud', 'Bali'],
+    desc:'A small vine-draped open-air family cafe in the Penestanan hills. Only three tables have the unobstructed view across rice fields — Mount Agung visible on clear days. Organic food, Balinese coffee, genuinely unhurried pace. Famous on Instagram but still retains its quiet character.',
+    time:'15 min walk via Campuhan Bridge · 8 min ride', costAUD:'A$5–12',
+    scooter:{ok:true, note:'8 min ride to Campuhan Bridge then narrow lane up Penestanan hill'},
+    go:'Arrive early to claim a view table. Pair with the Campuhan Ridge Walk as a breakfast stop.',
+    warn:'Only 3 view tables. If taken, wait — they turn quickly. Cash preferred.' },
+  { id:'sari-organik', cat:'eating', shortName:'Sari Organik',
+    name:'Sari Organik Farm Restaurant',
+    coords:[-8.5042,115.2661],
+    wikiSlugs:['Organic_food', 'Ubud', 'Bali'],
+    desc:'An Ubud legend. Reached only on foot or by motorbike through a working rice field path — no cars can get there. You walk through active paddies to arrive. Farm-to-table organic food surrounded by paddy on all sides. Pioneer of Ubud\'s organic food movement and still one of the most atmospheric meals on the island.',
+    time:'15 min walk through rice fields from Ubud center', costAUD:'A$8–18 per meal',
+    scooter:{ok:true, note:'Motorbike accessible via narrow rice field track — slow and careful'},
+    go:'Morning visits best for light and quiet. Pairs naturally with the Kajeng Rice Walk.',
+    warn:'WiFi very limited — great for a long slow meal, not a focused work session. Cash only.' },
+  { id:'hujan-locale', cat:'eating', shortName:'Hujan Locale',
+    name:'Hujan Locale',
+    coords:[-8.5073,115.2657],
+    wikiSlugs:['Indonesian_cuisine', 'Ubud', 'Bali'],
+    desc:'Chef Will Meyrick\'s modern Indonesian restaurant — widely considered the best place in Bali for authentic Indonesian food at fine-dining level. The menu tours the archipelago from Aceh to Papua. Tableside vintage cocktail cart, jazz nights, and a two-story space overlooking a Balinese temple garden.',
+    time:'5 min walk from villa', costAUD:'A$20–45 per person for dinner',
+    scooter:{ok:true, note:'Walking distance from villa'},
+    go:'Book in advance. Happy hour at the downstairs bar before your table is strongly recommended.',
+    warn:'Reservations essential in June. One of the best meals you\'ll eat in Bali — do not skip it.' },
+
+  /* ── NEW WORKING ── */
+  { id:'huma-cafe', cat:'working', shortName:'Huma Cafe',
+    name:'Huma Cafe — Rice Paddy Work Spot',
+    coords:[-8.4441,115.2819],
+    wikiSlugs:['Ubud', 'Digital_nomad', 'Bali'],
+    desc:'Literally surrounded by active rice fields near Tegalalang — open-air seating with paddies on all sides. Good WiFi, excellent food, genuinely peaceful. Consistently praised by remote workers for the combination of solitude, reliable internet, and immersive paddy views.',
+    time:'20 min drive north', costAUD:'A$5–15',
+    scooter:{ok:true, note:'Easy 20 min ride north via Tegalalang road'},
+    go:'Arrive 8–10am for morning mist, soft light, and the fastest WiFi before the day crowd arrives.',
+    warn:'Open-air setting — bring a layer for early mornings. WiFi slows with more users; morning always wins.' },
+
+  /* ── NEW NIGHTLIFE ── */
+  { id:'night-rooster', cat:'nightlife', shortName:'Night Rooster',
+    name:'Night Rooster Bar',
+    coords:[-8.5081,115.2654],
+    wikiSlugs:['Cocktail', 'Ubud', 'Bali'],
+    desc:'The most critically acclaimed cocktail bar in Ubud — previously ranked on Asia\'s 50 Best Bars. Small, moody, intimate. Experimental cocktails built around Bali\'s wild botanicals, local spirits, and Indonesian folklore narratives. Every drink is designed rather than assembled. The creative community\'s bar of choice.',
+    time:'5 min walk from villa', costAUD:'A$12–20 per cocktail',
+    scooter:{ok:true, note:'Walking distance from villa'},
+    go:'Fills by 8:30pm — arrive by 8pm. Craft and conversation, not a loud bar. Best on a quiet weeknight.',
+    warn:'Small space, no reservations. If full, Bacari wine bar and The Blue Door are both on Jl. Goutama within 50m.' },
+  { id:'pinstripe', cat:'nightlife', shortName:'Pinstripe at Viceroy',
+    name:'Pinstripe Bar — Viceroy Bali',
+    coords:[-8.4865,115.2556],
+    wikiSlugs:['Cocktail', 'Ubud', 'Bali'],
+    desc:'A 1920s Art Deco speakeasy bar at the Viceroy Bali — ranked in the global Top 500 Bars, helmed by a Campari Bartender Competition champion. Great Gatsby interior, sweeping valley views, world-class cocktails. The special-occasion bar in Ubud. Worth every dollar.',
+    time:'15 min drive north toward Kedewatan', costAUD:'A$15–28 per cocktail',
+    scooter:{ok:true, note:'15 min ride north — Kedewatan road is smooth'},
+    go:'Pair with dinner at Apéritif next door for a full upscale evening. Reservations recommended.',
+    warn:'Smart-casual dress code. This is a destination bar for one deliberate evening — not a casual drop-in.' },
+  { id:'laughing-buddha', cat:'nightlife', shortName:'Laughing Buddha',
+    name:'The Laughing Buddha',
+    coords:[-8.5155,115.2618],
+    wikiSlugs:['Music_venue', 'Ubud', 'Bali'],
+    desc:'Ubud\'s most reliably lively live music bar. Nightly live bands — rock, reggae, and funk — on Monkey Forest Road. Raw, unpretentious, genuinely fun. A total contrast to Ubud\'s wellness-and-temples vibe. The social hub where travelers and locals actually mix.',
+    time:'10 min walk or 5 min ride', costAUD:'A$4 beers · A$8–12 cocktails',
+    scooter:{ok:true, note:'10 min walk down Monkey Forest Road or a short ride'},
+    go:'Arrive by 7:30pm for good seats. Energy builds through the night. No booking — just show up.',
+    warn:'If over capacity, No Más and The Blue Door are 100m away. Bring cash — card readers fail on busy nights.' },
+  { id:'copper-bisma', cat:'nightlife', shortName:'Copper at Bisma Eight',
+    name:'Copper Kitchen & Rooftop Bar',
+    coords:[-8.5086,115.2598],
+    wikiSlugs:['Ubud', 'Bali', 'Rooftop'],
+    desc:'The most polished sunset rooftop bar in Ubud — at the Bisma Eight boutique hotel on scenic Jl. Bisma. Elevated views across jungle canopy, seasonal garden cocktails, romantic atmosphere. One of the few spots in Ubud with real elevation and a 360-degree feel.',
+    time:'10 min walk from villa', costAUD:'A$12–20 per cocktail',
+    scooter:{ok:true, note:'10 min walk or 5 min ride along Jl. Bisma'},
+    go:'Book a sunset slot (5–7pm). Perfect as pre-dinner drinks before Hujan Locale or Sayan House.',
+    warn:'Sunset slots fill in advance in June. Book same-day morning at minimum.' },
+
+  /* ── SPA & MASSAGE ── */
+  { id:'hesa-spa', cat:'spa', shortName:'Hesa Wellness Spa',
+    name:'Hesa Wellness Spa',
+    coords:[-8.5053,115.2618],
+    wikiSlugs:['Massage','Bali','Ubud'],
+    desc:'The most reviewed spa in Ubud with over 5,000 five-star Google reviews. Modern facilities including a Korean scrub, Turkish hammam, hot and cold plunge pools, and a full-body reset with natural products. Impeccably clean. Homemade snacks and herbal tea served post-treatment.',
+    time:'5 min walk from villa', costAUD:'A$23 facility access · A$43+ treatments · A$85 3hr package',
+    scooter:{ok:true,note:'Walking distance from villa'},
+    go:'Book at least a day ahead — this fills up. The 3-hour signature package is exceptional value.',
+    warn:'Two central locations (Jl. Sandat and Monkey Forest Rd) — confirm address when booking.' },
+
+  { id:'inka-spa', cat:'spa', shortName:'Inka Ubud Spa',
+    name:'Inka Ubud Spa',
+    coords:[-8.5122,115.2617],
+    wikiSlugs:['Facial','Bali','Ubud'],
+    desc:'High-end boutique spa on Monkey Forest Road. Immaculate interior, calming atmosphere, and a reputation for exceptional custom facials using Davines and Olaplex products. The signature massage relieves deep muscle tension. Designed for serious wellness seekers, not casual tourists.',
+    time:'10 min walk or 5 min ride', costAUD:'A$35 60-min massage · A$72+ 90-min facial',
+    scooter:{ok:true,note:'Easy walk or short ride down Monkey Forest Road'},
+    go:'Book via WhatsApp for fastest availability. The facial + massage combo is the move.',
+    warn:'Premium pricing. Small space — book at least 24 hrs ahead in peak season.' },
+
+  { id:'kaveri-spa', cat:'spa', shortName:'Kaveri Spa',
+    name:'Kaveri Spa — The Udaya Resort',
+    coords:[-8.5155,115.2348],
+    wikiSlugs:['Flower','Bali','Ubud'],
+    desc:'Award-winning resort spa that pioneered Bali\'s iconic flower bath ritual. Three private treatment rooms with views over the river and rice fields. The Kaveri Indulgence package — 2.5 hours of Balinese massage, body scrub, mask, and ceremonial flower bath — is the definitive luxury spa experience in Ubud.',
+    time:'20 min drive west', costAUD:'~A$145 for the 2.5hr Kaveri Indulgence package',
+    scooter:{ok:true,note:'20 min ride west — smooth road through Sayan'},
+    go:'Clarify exactly which flower bath option you want when booking — standard vs. the grand experience differ significantly.',
+    warn:'Expensive but genuinely world-class. One of those splurges that delivers. Book well ahead in June.' },
+
+  { id:'ubud-traditional-spa', cat:'spa', shortName:'Ubud Traditional Spa',
+    name:'Ubud Traditional Spa',
+    coords:[-8.5180,115.2125],
+    wikiSlugs:['Balinese_massage','Bali','Ubud'],
+    desc:'Ranked #2 of 450+ spas on TripAdvisor. A family-run operation in a traditional village setting in Kedewatan — quiet, unhurried, and authentically Balinese. Therapists are trained in genuine traditional technique. The most "real" spa experience available in Ubud without the resort markup.',
+    time:'30 min drive west', costAUD:'A$21–31 per treatment',
+    scooter:{ok:true,note:'30 min ride west into Kedewatan — winding village roads', caution:true},
+    go:'Book ahead and ask about complimentary transport (available for groups of 2+). Pair with a walk in the Kedewatan rice fields nearby.',
+    warn:'Remote location requires planning. Call ahead — they occasionally close for ceremonies.' },
+
+  { id:'karsa-spa', cat:'spa', shortName:'Karsa Spa',
+    name:'Karsa Spa',
+    coords:[-8.4920,115.2460],
+    wikiSlugs:['Subak_(irrigation)','Ubud','Bali'],
+    desc:'A hidden oasis built among active rice fields north of Ubud. Semi-outdoor pavilions open to garden ponds and jungle. Therapists are notably intuitive and highly personalised in their approach. The 90-minute deep massage is consistently described as the best single treatment in Ubud. Add a singing bowl healing session if available.',
+    time:'20 min drive north', costAUD:'A$33+ per treatment · ~A$85 for 3hr package',
+    scooter:{ok:true,note:'20 min ride north via Payangan road — easy'},
+    go:'Book a full week in advance in June — it genuinely sells out. The 3-hour package (massage + singing bowls + body scrub) is the signature experience.',
+    warn:'The most booked-out spa in Ubud. Do not try to walk in. Reserve as soon as you land.' },
+
+  { id:'nusa-therapy', cat:'spa', shortName:'Nusa Therapy',
+    name:'Nusa Therapy — Herbal Massage',
+    coords:[-8.5060,115.2635],
+    wikiSlugs:['Herbal_medicine','Bali','Ubud'],
+    desc:'A no-frills central Ubud gem focused on therapeutic results over luxury aesthetics. Traditional herbal aromatherapy massage, rice water treatments, and handmade jamu (Balinese herbal drink) with every session. Particularly praised for relieving tired legs, sore backs, and travel fatigue.',
+    time:'5 min walk from villa', costAUD:'~A$17 for 90-min massage',
+    scooter:{ok:true,note:'Walking distance from villa'},
+    go:'Excellent value for money — the best cheap massage in central Ubud. Perfect for a post-hike recovery.',
+    warn:'Mon–Sat 11am–8pm, Sun 1–8pm. Simple décor but the technique is genuinely excellent.' },
+
+  { id:'svaha-spa', cat:'spa', shortName:'Svaha Spa Bisma',
+    name:'Svaha Spa — Bisma',
+    coords:[-8.5083,115.2592],
+    wikiSlugs:['Ayurveda','Bali','Ubud'],
+    desc:'Award-winning sustainable spa on scenic Jl. Bisma, with bamboo forest and river gorge views from the treatment pavilions. Blends Balinese healing traditions with holistic modern wellness. One of four Svaha locations around Ubud — the Bisma branch has the best setting.',
+    time:'10 min walk from villa', costAUD:'A$35–59+ per treatment',
+    scooter:{ok:true,note:'10 min walk along Jl. Bisma or short ride'},
+    go:'The Bisma location is the pick of the four — river views and bamboo setting are unmatched.',
+    warn:'Multiple Svaha locations exist around Ubud at different price points. Confirm "Bisma" when booking.' },
+
+  { id:'midas-spa', cat:'spa', shortName:'Midas Spa',
+    name:'Midas Spa',
+    coords:[-8.5070,115.2625],
+    wikiSlugs:['Hot_stone_massage','Bali','Ubud'],
+    desc:'Central Ubud\'s best-value massage — opposite the Ubud Water Palace on the main road. Bamboo décor, natural water features, and clean private rooms. Balinese and hot stone massage. Consistently praised for punching well above its price point. Open until 10pm — ideal after a long day exploring.',
+    time:'5 min walk from villa', costAUD:'~A$12–16 per treatment',
+    scooter:{ok:true,note:'Walking distance from villa — on the main Jl. Raya Ubud'},
+    go:'Walk-ins usually fine. Open 10am–10pm. The hot stone massage for A$16 is exceptional value.',
+    warn:'Don\'t let the low price set low expectations — the quality is genuinely good. Budget pick of Ubud.' },
+
+  { id:'jaens-spa', cat:'spa', shortName:'Jaens Spa',
+    name:'Jaens Spa',
+    coords:[-8.5100,115.2712],
+    wikiSlugs:['Massage','Bali','Ubud'],
+    desc:'A family-owned wellness centre with 5,000+ five-star reviews and three locations across Ubud. Known for the "four-hands synchronicity massage" where two therapists work in perfectly mirrored unison — a uniquely disorienting and deeply relaxing technique. All-natural Balinese products throughout.',
+    time:'15 min ride east', costAUD:'A$35–50 for single treatments · A$128 full-day package',
+    scooter:{ok:true,note:'10 min ride east to Pengosekan — easy road'},
+    go:'Book the synchronicity massage — it\'s completely unique and worth the trip east. The Shanti location (Kumbuh Mas) is the quietest branch.',
+    warn:'Three locations — the Center and Triloka branches on Monkey Forest are busiest. Shanti is the most peaceful.' },
+
+  { id:'hammana-spa', cat:'spa', shortName:'Hammana Spa',
+    name:'Hammana Spa',
+    coords:[-8.4860,115.2345],
+    wikiSlugs:['Hammam','Bali','Ubud'],
+    desc:'A unique Turkish hammam meets Balinese wellness sanctuary on a 2.2-hectare estate near Kenderan Village. Steam therapy and full-body exfoliation in the hammam, followed by Wariga Bali — a personalised Balinese life-path wellness ritual. Also offers custom essential oil blending and ceremonial footbaths. Genuinely one-of-a-kind in Bali.',
+    time:'25 min drive north', costAUD:'Premium — contact for pricing',
+    scooter:{ok:true,note:'25 min ride north toward Kenderan — winding roads', caution:true},
+    go:'Book directly at hammanaspa.com. Call ahead to discuss the Wariga Bali ritual — it requires a brief consultation first.',
+    warn:'Unlike any other spa on this map. If you want a culturally immersive, non-standard luxury experience, this is it.' },
+
+  /* ── POOLS & DAY CLUBS / TERRACE-VIEW VENUES ── */
+  { id:'alas-harum', cat:'dayclub', shortName:'Alas Harum / Cretya',
+    name:'Alas Harum & Cretya Ubud',
+    coords:[-8.4398,115.2806],
+    wikiSlugs:['Tegallalang','Rice_paddy','Bali'],
+    desc:'An 8-hectare attraction park built right into the Tegalalang terraces — the slickest way to turn the rice-terrace view into a full day. Its day club, Cretya, has a three-tiered infinity pool that visually spills into the paddies, with a DJ, cabanas and food. Beyond the pool: 15+ photo swings, sky-bikes, a glass-floor lookout and luwak coffee tastings.',
+    time:'25 min drive north', costAUD:'~A$5 park entry · A$5 Cretya pool · swings from A$20',
+    scooter:{ok:true, note:'Easy 25 min ride north on the Tegalalang road'},
+    go:'Pair with the Tegalalang terraces (Package A) — do the quiet terrace walk at 7am, then arrive here for the 8am opening before the tour vans.',
+    warn:'Cretya pool is 18+ and crowds up by midday. The big swings carry an adrenaline premium — agree the price before you strap in.' },
+
+  { id:'omma', cat:'dayclub', shortName:'Omma Day Club',
+    name:'OMMA Day Club Bali',
+    coords:[-8.5759,115.2897],
+    wikiSlugs:['Tegenungan_Waterfall','Bali','Ubud'],
+    desc:'A sprawling day club perched on the gorge directly opposite Tegenungan Waterfall — you lounge at an infinity pool with the thundering falls as your backdrop. Multiple pools, a swim-up bar, DJ sets and cabanas. The rare Ubud club where the view is a waterfall rather than rice fields.',
+    time:'20 min drive south (10 min from Tegenungan)', costAUD:'Day pass ~A$20–35 (partly redeemable on food & drink)',
+    scooter:{ok:true, note:'Easy ride south via the Tegenungan road'},
+    go:'Bolt onto Package D — see Tegenungan at dawn, then come here for the 7:30am opening to beat the heat and the crowd.',
+    warn:'Busy and loud by midday on weekends. Pool access is via day pass — book ahead in peak season.' },
+
+  { id:'jungle-fish', cat:'dayclub', shortName:'Jungle Fish',
+    name:'Jungle Fish Pool & Bar',
+    coords:[-8.4789,115.2609],
+    wikiSlugs:['Ayung_River','Ubud','Bali'],
+    desc:'The original Ubud jungle infinity pool — a circular pool cantilevered over a steep jungle ravine near Keliki, ringed by nothing but treetops and birdsong. Smaller and more intimate than the mega-clubs, it trades DJs for a genuine sense of floating above the canopy. The shot that put Ubud pool-days on the map.',
+    time:'25 min drive north', costAUD:'Min-spend day pass ~A$25–40 (redeemable on food & drink)',
+    scooter:{ok:true, note:'25 min ride north toward Keliki — paved, easy'},
+    go:'Go on opening (9am) for the pool to yourself and soft light over the ravine. Weekdays are far quieter.',
+    warn:'Entry is a redeemable minimum spend, not free. Small pool — it fills fast once day-trippers arrive after 11am.' },
+
+  /* ── TERRACE-VIEW CAFE ── */
+  { id:'pomegranate', cat:'eating', shortName:'Cafe Pomegranate',
+    name:'Cafe Pomegranate',
+    coords:[-8.4987,115.2581],
+    wikiSlugs:['Subak_(irrigation)','Ubud','Bali'],
+    desc:'An open-sided safari-tent cafe marooned in the middle of the Sok Wayah rice fields, with a near-360° paddy view and no road access — you reach it on foot through the paddies. Beanbags, low tables, gamelan on some nights. The quintessential "rock up, sink in, lose three hours" Ubud rice-field cafe.',
+    time:'15 min walk through the rice fields north of Ubud center', costAUD:'A$4–12',
+    scooter:{ok:true, note:'Park at the field edge and walk in — the last stretch is footpath only'},
+    go:'Pairs with the Kajeng / Sok Wayah paddy walk (Package EM2). Beautiful at sunset — bring a torch for the walk back.',
+    warn:'No vehicle access and little lighting after dark. Cash only. WiFi is weak — a switch-off spot, not a work one.' },
+
+  /* ── UNESCO RICE TERRACE (rock-up) ── */
+  { id:'jatiluwih', cat:'signature', shortName:'Jatiluwih Terraces',
+    name:'Jatiluwih Rice Terraces — UNESCO',
+    coords:[-8.3705,115.1315],
+    wikiSlugs:['Jatiluwih','Subak_(irrigation)','Bali'],
+    desc:'If Tegalalang is the postcard, Jatiluwih is the epic — a vast UNESCO-listed amphitheatre of ancient subak terraces sweeping up the slopes of Mount Batukaru, with almost none of Tegalalang’s crowds or hawkers. Five marked walking trails (1.5–5 km) let you disappear into the paddies for hours of near-total solitude.',
+    time:'1.5 hr drive northwest', costAUD:'~A$4 entry · walks free',
+    scooter:{ok:true, note:'90 min mountain ride NW — experienced riders only; a driver is far easier', caution:true},
+    go:'A half-to-full-day commitment, best with a driver on a clear morning. Combine with Batukaru temple or Tabanan en route.',
+    warn:'Genuinely far from Ubud — this replaces a day, it doesn’t slot into a morning. Skip if your days are tight; do it if you crave the real thing.' },
+];
+
+/* ── VISITED STATE (persisted) ───────────────────────── */
+const VKEY='bali-visited-v1';
+let hideVisited=false, visited;
+try { visited = new Set(JSON.parse(localStorage.getItem(VKEY)||'[]')); } catch(e){ visited=new Set(); }
+const isVisited = id => visited.has(id);
+function saveVisited(){ try{ localStorage.setItem(VKEY, JSON.stringify([...visited])); }catch(e){} }
+
+/* ── ICONS ───────────────────────────────────────────── */
+function makeIcon(loc){
+  const c=CAT[loc.cat];
+  if(loc.cat==='villa') return L.divIcon({className:'',html:`<div class="vm">🏡</div>`,iconSize:[46,46],iconAnchor:[23,23]});
+  const v=isVisited(loc.id), vb=v?`<div class="vk-badge">✓</div>`:'';
+  return L.divIcon({className:'',html:`<div class="mp${v?' mp-visited':''}" style="background:${c.grad}"><span>${c.icon}</span></div>${vb}`,iconSize:[36,36],iconAnchor:[18,36]});
+}
+
+/* ── POPUP ───────────────────────────────────────────── */
+function makePopup(loc){
+  const c=CAT[loc.cat];
+  // Photo divs use data attributes; Wikipedia images are loaded async on popupopen
+  const slugs = loc.wikiSlugs || [];
+  const photos = slugs.map((s,i)=>
+    `<div class="pc-photo" data-lid="${loc.id}" data-pi="${i}" data-slug="${s}"></div>`
+  ).join('');
+  const scCls  = (loc.scooter&&loc.scooter.caution)?'ctn':'ok';
+  const scIcon = (loc.scooter&&loc.scooter.caution)?'⚠️':'✓';
+  const scooterHtml = loc.scooter ? `
+    <div class="pc-scooter ${scCls}">
+      <span class="pc-sc-ico">🛵</span>
+      <div class="pc-sc-text">
+        <div class="pc-sc-lbl">By Scooter</div>
+        <div class="pc-sc-val">${scIcon} ${loc.scooter.note}</div>
+      </div>
+    </div>` : '';
+  const warnHtml = loc.warn ? `<div class="pc-tip warn"><span class="pc-tip-ico">⚠️</span><span>${loc.warn}</span></div>` : '';
+  const visitHtml = loc.cat!=='villa' ? `<div class="pc-visit" data-vid="${loc.id}" onclick="toggleVisited('${loc.id}',event)"><span class="pcv-box">✓</span><span class="pcv-txt">Mark as visited</span></div>` : '';
+  return `<div class="pc">
+    <div class="pc-hdr" style="background:${c.grad}">
+      <div class="pc-badge">${c.icon} ${c.label}</div>
+      <div class="pc-title">${loc.name}</div>
+    </div>
+    <div class="pc-hdr" style="background:${c.grad};padding:0 0 14px;">
+      <div class="pc-photos">${photos}</div>
+    </div>
+    <div class="pc-body">
+      <div class="pc-desc">${loc.desc}</div>
+      <div class="pc-grid">
+        <div class="pc-stat">
+          <div class="pc-stat-lbl">🚗 From Villa</div>
+          <div class="pc-stat-val">${loc.time}</div>
+        </div>
+        <div class="pc-stat">
+          <div class="pc-stat-lbl">💰 Cost (AUD)</div>
+          <div class="pc-stat-val">${loc.costAUD}</div>
+        </div>
+      </div>
+      ${scooterHtml}
+      <div class="pc-tip go"><span class="pc-tip-ico">✅</span><span>${loc.go}</span></div>
+      ${warnHtml}
+      ${visitHtml}
+      <a class="pc-maps" href="https://www.google.com/maps/search/?api=1&query=${loc.coords[0]},${loc.coords[1]}" target="_blank" rel="noopener">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        Open in Google Maps
+      </a>
+    </div>
+  </div>`;
+}
+
+/* ── MARKERS ─────────────────────────────────────────── */
+const layers={}, markerMap={};
+
+LOCS.forEach(loc=>{
+  const m = L.marker(loc.coords,{icon:makeIcon(loc)})
+    .bindPopup(makePopup(loc),{maxWidth:340,maxHeight:520});
+  if(loc.cat!=='villa'){
+    m.bindTooltip(loc.shortName||loc.name,{
+      permanent:true, direction:'top', className:'mk-label', offset:[0,-4]
+    });
+  }
+  if(!layers[loc.cat]) layers[loc.cat]=[];
+  layers[loc.cat].push(m);
+  markerMap[loc.id]=m;
+  m.addTo(map);
+});
+
+/* ── ZOOM LABELS ─────────────────────────────────────── */
+const LABEL_ZOOM=15;
+function syncLabels(){
+  const show=map.getZoom()>=LABEL_ZOOM;
+  document.querySelectorAll('.leaflet-tooltip.mk-label').forEach(el=>{
+    el.style.pointerEvents='none';
+    if(activePkg){ el.style.opacity = el.classList.contains('tt-on') ? '1' : '0'; }
+    else { el.style.opacity = show ? '1' : '0'; }
+  });
+}
+map.on('zoomend',syncLabels);
+setTimeout(syncLabels,200);
+
+/* ── FILTER TOGGLE ───────────────────────────────────── */
+function tog(el){ el.classList.toggle('off'); refreshVisibility(); }
+
+function setAll(show){
+  document.querySelectorAll('.cf').forEach(el=>el.classList.toggle('off', !show));
+  refreshVisibility();
+}
+
+/* ── TILE LIST ───────────────────────────────────────── */
+(function buildTiles(){
+  const container=document.getElementById('leg-tiles');
+  LOCS.filter(l=>l.cat!=='villa').forEach(loc=>{
+    const c=CAT[loc.cat];
+    const el=document.createElement('div');
+    el.className='tile'+(isVisited(loc.id)?' visited':'');
+    el.dataset.tid=loc.id;
+    el.style.borderLeft=`3px solid ${c.color}`;
+    el.innerHTML=`
+      <div class="tile-thumb" data-lid="${loc.id}"></div>
+      <div class="tile-info">
+        <div class="tile-name">${loc.shortName||loc.name}</div>
+        <div class="tile-cat" style="color:${c.color}">${c.icon} ${c.label}</div>
+      </div>
+      <div class="tile-tick" title="Mark as visited" onclick="toggleVisited('${loc.id}',event)">✓</div>`;
+    el.onclick=()=>flyTo(loc.id);
+    container.appendChild(el);
+  });
+
+  // tile photos applied by preloadPhotos() called after map setup
+})();
+
+/* ── POPUP PHOTOS ────────────────────────────────────── */
+// By the time the user clicks a pin, preloadPhotos() will have finished
+// and the cache is ready — just apply synchronously.
+map.on('popupopen', ()=>{
+  document.querySelectorAll('.pc-photo[data-slug]').forEach(div=>{
+    const url = WIKI_CACHE[div.dataset.slug];
+    if (url) applyBg(div, url);
+  });
+  document.querySelectorAll('.pc-visit[data-vid]').forEach(btn=>{
+    const on=isVisited(btn.dataset.vid);
+    btn.classList.toggle('done', on);
+    const t=btn.querySelector('.pcv-txt'); if(t) t.textContent = on ? 'Visited ✓' : 'Mark as visited';
+  });
+});
+
+/* ── FLY TO ──────────────────────────────────────────── */
+function flyTo(id){
+  const loc=LOCS.find(l=>l.id===id);
+  if(!loc)return;
+  map.flyTo(loc.coords,16,{animate:true,duration:1.2});
+  setTimeout(()=>{ if(markerMap[id]) markerMap[id].openPopup(); },1400);
+}
+
+/* ── ITINERARY PACKAGES ──────────────────────────────── */
+const PACKAGES = [
+  // ── MORNING EXPEDITIONS (drive-out, dawn, one direction each) ──
+  { id:'A', kind:'morning', badge:'A', name:'Tegalalang North', tier:'Unmissable', time:'~3 hrs + work', start:'Leave 6:30am',
+    why:'Iconic terraces at golden light, a serene water temple 10 min on, then work on the north side — no backtracking home.',
+    stops:[ {id:'tegalalang',t:'7:00am',note:'Golden light, vendors asleep'}, {id:'sebatu',t:'9:00am',note:'Quiet spring temple'}, {id:'huma-cafe',t:'10:30am',note:'Work block — paddy WiFi'} ] },
+  { id:'B', kind:'morning', badge:'B', name:'Tampaksiring Heritage', tier:'Top tier', time:'~3 hrs', start:'Leave 7:00am',
+    why:'Two 11th-century river temples 10 min apart — Bali’s holiest spring, then the cliff-carved royal shrines.',
+    stops:[ {id:'tirta-empul',t:'7:30am',note:'Morning ceremonies, pre-bus'}, {id:'gunung-kawi',t:'9:15am',note:'300-step valley descent'} ] },
+  { id:'C', kind:'morning', badge:'C', name:'East Archaeology + Swim', tier:'Top tier', time:'~3.5 hrs', start:'Leave 7:30am',
+    why:'Two barely-visited ancient sites 5 min apart, then a climbable waterfall to cool off — all close to home.',
+    stops:[ {id:'goa-gajah',t:'8:00am',note:'Hire the guide (A$8)'}, {id:'yeh-pulu',t:'9:00am',note:'14th-c rock relief'}, {id:'kanto-lampo',t:'9:45am',note:'Swim & scramble'} ] },
+  { id:'D', kind:'morning', badge:'D', name:'South Water Adventure', tier:'If time', time:'~3.5 hrs', start:'Leave 6:45am',
+    why:'A dramatic cascade, then a slot-canyon wade, with the island’s best bakery on the way home.',
+    stops:[ {id:'tegenungan',t:'7:15am',note:'Before the crowds'}, {id:'beji-guwang',t:'8:45am',note:'Canyon wade (opens 8:30)'}, {id:'rusters',t:'11:00am',note:'Lunch & coffee'} ] },
+  { id:'E', kind:'morning', badge:'E', name:'NE Waterfall Chase', tier:'Optional', time:'~3 hrs', start:'Leave 8:00am',
+    why:'The one truly unique fall — sunbeams into a cave canyon (9–11am only) — plus a wild remote pair.',
+    stops:[ {id:'tukad-cepung',t:'9:00am',note:'Light beams 9–11am sharp'}, {id:'tibumana',t:'10:30am',note:'Wild twin falls'} ] },
+  { id:'F', kind:'morning', badge:'F', name:'Mt Batur Sunrise', tier:'Unmissable · burn-day', time:'2am–11am', start:'Leave 2:00am',
+    why:'Pre-dawn volcano summit above the clouds. Eats the day — keep the evening for recovery, next morning light.',
+    stops:[ {id:'mount-batur',t:'5:15am',note:'Summit for sunrise'} ] },
+  { id:'G', kind:'morning', badge:'G', name:'East Bali Big Day', tier:'Aspirational', time:'Full day', start:'Leave 7am · driver',
+    why:'“The real Tegalalang” — Sidemen’s terraces under the full face of Agung. Sacrifices a work day.',
+    stops:[ {id:'bukit-cinta',t:'8:30am',note:'Agung viewpoint'}, {id:'sidemen',t:'10:30am',note:'Walk the working paddies'} ] },
+
+  // ── EASY MORNINGS (no drive — for a heavy-work or post-Batur day) ──
+  { id:'EM1', kind:'easy', badge:'🌿', name:'Campuhan Sunrise', tier:'Easy · no drive', time:'~2 hrs', start:'Leave 6:00am',
+    why:'Bali’s best free morning — a dawn ridge walk ending at a Penestanan view-table breakfast.',
+    stops:[ {id:'gunung-lebah',t:'6:10am',note:'Temple at the trailhead'}, {id:'campuhan',t:'6:20am',note:'Ridge at sunrise, cool & empty'}, {id:'yellow-flower',t:'7:45am',note:'Breakfast, grab a view table'} ] },
+  { id:'EM2', kind:'easy', badge:'🌿', name:'Kajeng Paddy Loop', tier:'Easy · no drive', time:'~2 hrs', start:'Leave 7:00am',
+    why:'A crowd-free paddy loop 5 min from your door, ending at the legendary rice-field farm cafe.',
+    stops:[ {id:'kajeng-walk',t:'7:00am',note:'Subak loop, morning mist'}, {id:'sari-organik',t:'8:30am',note:'Farm-to-table breakfast'} ] },
+
+  // ── EVENING / FLEX (highlight only, no fixed route) ──
+  { id:'FX1', kind:'flex', badge:'🎭', name:'Culture Nights', tier:'Evening · flex', noRoute:true,
+    why:'Monkey Forest at golden hour, a temple dance or the Kecak fire-trance, or the magical firefly farm.',
+    stops:[ {id:'monkey-forest',note:'4–5pm light, fewer groups'}, {id:'saraswati',note:'Lotus temple dance 7:30pm'}, {id:'ubud-palace',note:'Legong / Kecak 7:30pm'}, {id:'kecak-dance',note:'Wed/Sat fire-trance ~7pm'}, {id:'firefly-tour',note:'Book 3–4 days ahead'} ] },
+  { id:'FX2', kind:'flex', badge:'🍸', name:'Sunset & Dining', tier:'Evening · flex', noRoute:true,
+    why:'A rooftop or gorge-edge drink, then Ubud’s best tables. Reserve everything in June.',
+    stops:[ {id:'copper-bisma',note:'Rooftop sunset 5–7pm'}, {id:'pinstripe',note:'Art-deco speakeasy'}, {id:'sayan-house',note:'Gorge-edge, book ahead'}, {id:'hujan-locale',note:'Best Indonesian fine dining'}, {id:'wedja',note:'Canopy sunset table'}, {id:'night-rooster',note:'Top cocktail bar, by 8pm'} ] },
+  { id:'FX3', kind:'flex', badge:'💆', name:'Spa Reset', tier:'Recovery · flex', noRoute:true,
+    why:'Post-hike recovery — the standout massages, the flower baths, and the ice bath.',
+    stops:[ {id:'karsa-spa',note:'Best single treatment, book early'}, {id:'tanatap',note:'Sauna + ice bath (post-Batur)'}, {id:'hesa-spa',note:'3-hr package, great value'}, {id:'green-tara',note:'Flower-bath ritual'}, {id:'nusa-therapy',note:'Cheap, excellent, central'}, {id:'midas-spa',note:'Open till 10pm'} ] },
+  { id:'FX4', kind:'flex', badge:'🌅', name:'Terrace Views', tier:'Views · flex', noRoute:true,
+    why:'The island’s best terrace-view venues — pools over the paddies, a cafe in the fields, and gorge-edge tables.',
+    stops:[ {id:'alas-harum',note:'Tiered pool in the Tegalalang terraces'}, {id:'omma',note:'Pool facing Tegenungan falls'}, {id:'jungle-fish',note:'Infinity pool over a jungle ravine'}, {id:'pomegranate',note:'Tent cafe in the paddies'}, {id:'sayan-house',note:'Gorge-edge dining'}, {id:'rusters',note:'Sunset over rice fields'} ] },
+];
+
+let activePkg=null, routeLine=null;
+const locById = id => LOCS.find(l=>l.id===id);
+
+function makeNumberedIcon(loc,n){
+  const c=CAT[loc.cat];
+  const v=isVisited(loc.id), vb=v?`<div class="vk-badge">✓</div>`:'';
+  return L.divIcon({ className:'', iconSize:[36,36], iconAnchor:[18,36],
+    html:`<div class="mp${v?' mp-visited':''}" style="background:${c.grad}"><span>${c.icon}</span></div><div class="pk-num">${n}</div>${vb}` });
+}
+
+function clearPkg(){
+  activePkg=null;
+  if(routeLine){ map.removeLayer(routeLine); routeLine=null; }
+  LOCS.forEach(loc=>{
+    const m=markerMap[loc.id]; if(!m) return;
+    m.setOpacity(1);
+    if(loc.cat!=='villa') m.setIcon(makeIcon(loc));
+  });
+  document.querySelectorAll('.leaflet-tooltip.mk-label.tt-on').forEach(el=>el.classList.remove('tt-on'));
+  document.querySelectorAll('.pk.active').forEach(e=>e.classList.remove('active'));
+  const d=document.getElementById('pkg-detail'); d.innerHTML=''; d.classList.remove('show');
+  syncLabels();
+}
+
+function renderDetail(pk){
+  const d=document.getElementById('pkg-detail');
+  const rows=pk.stops.map((s,i)=>{
+    const loc=locById(s.id); if(!loc) return '';
+    const c=CAT[loc.cat];
+    const lead = pk.noRoute ? `<span class="pd-dot" style="background:${c.color}"></span>` : `<span class="pd-num">${i+1}</span>`;
+    const t = s.t ? `<span class="pd-t">${s.t}</span>` : '';
+    const note = s.note ? `<div class="pd-note">${s.note}</div>` : '';
+    return `<div class="pd-stop${isVisited(s.id)?' visited':''}" data-vid="${s.id}" onclick="flyTo('${s.id}')">${lead}
+      <div class="pd-stop-main">
+        <div class="pd-stop-top"><span class="pd-name">${loc.shortName||loc.name}</span>${t}</div>
+        ${note}
+      </div></div>`;
+  }).join('');
+  d.innerHTML=`
+    <div class="pd-hdr">
+      <div class="pd-badge">${pk.badge||pk.id}</div>
+      <div class="pd-ttl">
+        <div class="pd-name-l">${pk.name}</div>
+        <div class="pd-tier">${pk.tier}${pk.start?' · '+pk.start:''}</div>
+      </div>
+      <div class="pd-close" onclick="clearPkg()" title="Clear">✕</div>
+    </div>
+    <div class="pd-why">${pk.why}</div>
+    <div class="pd-stops">${rows}</div>`;
+  d.classList.add('show');
+}
+
+function activatePkg(pid){
+  const pk=PACKAGES.find(p=>p.id===pid); if(!pk) return;
+  if(activePkg===pid){ clearPkg(); return; }   // toggle off
+  clearPkg();
+  activePkg=pid;
+
+  const memberIds=new Set(['villa', ...pk.stops.map(s=>s.id)]);
+  LOCS.forEach(loc=>{
+    const m=markerMap[loc.id]; if(!m) return;
+    if(memberIds.has(loc.id)){
+      if(!map.hasLayer(m)) m.addTo(map);
+      m.setOpacity(1);
+    } else {
+      m.setOpacity(0.16);
+    }
+  });
+
+  if(!pk.noRoute){
+    pk.stops.forEach((s,i)=>{
+      const loc=locById(s.id), m=markerMap[s.id];
+      if(loc&&m) m.setIcon(makeNumberedIcon(loc,i+1));
+    });
+    const pts=[ locById('villa').coords, ...pk.stops.map(s=>locById(s.id).coords) ];
+    routeLine=L.polyline(pts,{color:'#E8C87A',weight:3,opacity:.85,dashArray:'2,9',lineCap:'round'}).addTo(map);
+  }
+
+  // keep member labels lit, hide the rest
+  memberIds.forEach(id=>{
+    const m=markerMap[id], tt=m&&m.getTooltip&&m.getTooltip();
+    const el=tt&&tt.getElement&&tt.getElement();
+    if(el) el.classList.add('tt-on');
+  });
+
+  const fitPts=pk.stops.map(s=>locById(s.id).coords);
+  if(!pk.noRoute) fitPts.push(locById('villa').coords);
+  map.fitBounds(L.latLngBounds(fitPts),{padding:[90,90],maxZoom:14});
+
+  document.querySelector(`.pk[data-pid="${pid}"]`)?.classList.add('active');
+  renderDetail(pk);
+  syncLabels();
+}
+
+(function buildPackages(){
+  const wrap=document.getElementById('pkg-list');
+  [ {key:'morning',label:'Morning Expeditions'}, {key:'easy',label:'Easy Mornings'}, {key:'flex',label:'Evening / Flex'} ].forEach(g=>{
+    const items=PACKAGES.filter(p=>p.kind===g.key); if(!items.length) return;
+    const sec=document.createElement('div');
+    sec.innerHTML=`<div class="pk-sec-hdr">${g.label}</div>`;
+    items.forEach(p=>{
+      const el=document.createElement('div');
+      el.className='pk'; el.dataset.pid=p.id;
+      el.innerHTML=`<div class="pk-badge">${p.badge||p.id}</div>
+        <div class="pk-meta"><div class="pk-name">${p.name}</div><div class="pk-sub">${p.tier}${p.time?' · '+p.time:''}</div></div>`;
+      el.onclick=()=>activatePkg(p.id);
+      sec.appendChild(el);
+    });
+    wrap.appendChild(sec);
+  });
+})();
+
+/* ── VISITED ACTIONS ─────────────────────────────────── */
+function currentIconFor(loc){
+  if(activePkg){
+    const pk=PACKAGES.find(p=>p.id===activePkg);
+    if(pk && !pk.noRoute){
+      const idx=pk.stops.findIndex(s=>s.id===loc.id);
+      if(idx>=0) return makeNumberedIcon(loc, idx+1);
+    }
+  }
+  return makeIcon(loc);
+}
+function applyVisited(id){
+  const loc=locById(id); if(!loc) return;
+  const on=isVisited(id);
+  const m=markerMap[id]; if(m) m.setIcon(currentIconFor(loc));
+  const tile=document.querySelector(`.tile[data-tid="${id}"]`);
+  if(tile) tile.classList.toggle('visited', on);
+  document.querySelectorAll(`.pc-visit[data-vid="${id}"]`).forEach(btn=>{
+    btn.classList.toggle('done', on);
+    const t=btn.querySelector('.pcv-txt'); if(t) t.textContent = on ? 'Visited ✓' : 'Mark as visited';
+  });
+  document.querySelectorAll(`.pd-stop[data-vid="${id}"]`).forEach(el=>el.classList.toggle('visited', on));
+}
+function toggleVisited(id, ev){
+  if(ev) ev.stopPropagation();
+  if(visited.has(id)) visited.delete(id); else visited.add(id);
+  saveVisited();
+  applyVisited(id);
+  updateVisitedCount();
+  if(hideVisited) refreshVisibility();
+}
+function updateVisitedCount(){
+  const el=document.getElementById('hv-count'); if(el) el.textContent=visited.size;
+}
+function toggleHideVisited(){
+  hideVisited=!hideVisited;
+  document.getElementById('hide-visited').classList.toggle('on', hideVisited);
+  refreshVisibility();
+}
+function refreshVisibility(){
+  LOCS.forEach(loc=>{
+    if(loc.cat==='villa') return;
+    const m=markerMap[loc.id]; if(!m) return;
+    const cf=document.querySelector(`.cf[data-cat="${loc.cat}"]`);
+    const catOn = cf && !cf.classList.contains('off');
+    const hidden = hideVisited && isVisited(loc.id);
+    const show = catOn && !hidden;
+    if(show){ if(!map.hasLayer(m)) m.addTo(map); }
+    else { if(map.hasLayer(m)) map.removeLayer(m); }
+    const tile=document.querySelector(`.tile[data-tid="${loc.id}"]`);
+    if(tile) tile.style.display = hidden ? 'none' : '';
+  });
+  syncLabels();
+}
+function initVisited(){
+  visited.forEach(id=>applyVisited(id));
+  updateVisitedCount();
+}
+
+/* ── FIT BOUNDS ──────────────────────────────────────── */
+const bounds=L.latLngBounds(LOCS.map(l=>l.coords));
+map.fitBounds(bounds,{padding:[80,80]});
+
+/* ── KICK OFF PHOTO PRELOAD ──────────────────────────── */
+initVisited();
+preloadPhotos();
+</script>
+</body>
+</html>
