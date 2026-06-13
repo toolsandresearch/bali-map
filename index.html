@@ -321,6 +321,16 @@
     /* numbered route pin badge */
     .pk-num { position:absolute; top:-5px; right:-5px; width:18px; height:18px; border-radius:50%; background:var(--gold-light); color:var(--jungle-dark); font-size:10px; font-weight:800; display:flex; align-items:center; justify-content:center; box-shadow:0 1px 5px rgba(0,0,0,.5); border:1.5px solid #5A3800; }
 
+    /* ── CURRENT LOCATION ── */
+    #locate-btn { position:absolute; bottom:104px; right:16px; z-index:800; width:42px; height:42px; border-radius:11px; background:rgba(11,28,18,.91); backdrop-filter:blur(18px); border:1px solid var(--gold-dim); box-shadow:0 6px 20px rgba(0,0,0,.35); display:flex; align-items:center; justify-content:center; color:var(--gold); cursor:pointer; transition:color .2s, border-color .2s, background .2s; }
+    #locate-btn:hover { background:rgba(255,255,255,.06); }
+    #locate-btn.active { color:#2F8FFF; border-color:rgba(47,143,255,.65); }
+    .ud-core { position:absolute; top:50%; left:50%; width:16px; height:16px; transform:translate(-50%,-50%); background:#2F8FFF; border:2.5px solid #fff; border-radius:50%; box-shadow:0 0 0 1px rgba(0,0,0,.25),0 1px 6px rgba(0,0,0,.55); z-index:2; }
+    .ud-pulse { position:absolute; top:50%; left:50%; width:16px; height:16px; transform:translate(-50%,-50%); border-radius:50%; background:rgba(47,143,255,.45); animation:udpulse 2s ease-out infinite; }
+    @keyframes udpulse { 0%{ width:16px; height:16px; opacity:.7; } 100%{ width:64px; height:64px; opacity:0; } }
+    #toast { position:fixed; left:50%; bottom:84px; transform:translateX(-50%) translateY(10px); z-index:1400; max-width:86vw; background:rgba(11,28,18,.97); border:1px solid var(--gold-dim); color:var(--cream); font-size:12.5px; line-height:1.45; padding:11px 16px; border-radius:12px; box-shadow:0 8px 30px rgba(0,0,0,.5); opacity:0; pointer-events:none; transition:opacity .25s, transform .25s; text-align:center; }
+    #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
     /* mobile-only chrome hidden on desktop */
     #mobile-bar, #drawer-backdrop, .drawer-x { display:none; }
 
@@ -364,6 +374,7 @@
 
       #mobile-bar { display:flex; gap:10px; position:fixed; left:0; right:0; bottom:0; z-index:1150; padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px)); background:linear-gradient(0deg, rgba(8,18,12,.97), rgba(8,18,12,0)); pointer-events:none; }
       #mobile-bar .mbtn { pointer-events:auto; flex:1; padding:13px 10px; border-radius:12px; border:1px solid var(--gold-dim); background:rgba(11,28,18,.96); color:var(--gold); font-family:'Inter',sans-serif; font-size:13px; font-weight:600; display:flex; align-items:center; justify-content:center; gap:7px; box-shadow:0 4px 18px rgba(0,0,0,.45); }
+      #locate-btn { bottom:82px; right:12px; top:auto; }
       body.drawer-open #mobile-bar { display:none; }
     }
 
@@ -474,6 +485,12 @@
   <div class="lb"    id="lb-sat" onclick="setLayer('sat')">🛰&nbsp; Satellite</div>
 </div>
 
+<div id="locate-btn" onclick="onLocateClick()" title="Show my location" aria-label="Show my location">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="7"/><line x1="12" y1="1.5" x2="12" y2="4.5"/><line x1="12" y1="19.5" x2="12" y2="22.5"/><line x1="1.5" y1="12" x2="4.5" y2="12"/><line x1="19.5" y1="12" x2="22.5" y2="12"/><circle cx="12" cy="12" r="2.6" fill="currentColor" stroke="none"/>
+  </svg>
+</div>
+
 <div id="pkg">
   <div id="pkg-hdr" onclick="document.getElementById('pkg').classList.toggle('collapsed')">
     <div class="ph-l"><span class="ph-ico">🧭</span><span class="ph-ttl">Itineraries</span></div>
@@ -496,6 +513,7 @@
   <button class="mbtn" onclick="openDrawer('leg')">☰&nbsp; Filters</button>
   <button class="mbtn" onclick="openDrawer('pkg')">🧭&nbsp; Plans</button>
 </div>
+<div id="toast"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
@@ -1521,12 +1539,69 @@ function closeDrawers(){
   document.body.classList.remove('drawer-open');
 }
 
+/* ── CURRENT LOCATION ────────────────────────────────── */
+const UBUD_LL=[-8.5073,115.2631];
+const BALI_RADIUS_KM=200;
+let userMarker=null, watchId=null, pendingFly=false, userLatLng=null, toastT=null;
+function toast(msg){
+  const el=document.getElementById('toast'); if(!el) return;
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove('show'),4800);
+}
+function haversineKm(a,b){
+  const R=6371, toR=x=>x*Math.PI/180;
+  const dLat=toR(b[0]-a[0]), dLng=toR(b[1]-a[1]);
+  const s=Math.sin(dLat/2)**2 + Math.cos(toR(a[0]))*Math.cos(toR(b[0]))*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(s));
+}
+function setLocateActive(on){ const b=document.getElementById('locate-btn'); if(b) b.classList.toggle('active', on); }
+function onPos(pos){
+  userLatLng=[pos.coords.latitude, pos.coords.longitude];
+  const dist=haversineKm(userLatLng, UBUD_LL);
+  if(dist<=BALI_RADIUS_KM){
+    setLocateActive(true);
+    if(!userMarker){
+      userMarker=L.marker(userLatLng,{icon:L.divIcon({className:'',iconSize:[18,18],iconAnchor:[9,9],html:'<div class="ud-pulse"></div><div class="ud-core"></div>'}),interactive:false,keyboard:false,zIndexOffset:1000}).addTo(map);
+    } else userMarker.setLatLng(userLatLng);
+    if(pendingFly){ map.flyTo(userLatLng,15,{animate:true,duration:1.2}); pendingFly=false; }
+  } else {
+    setLocateActive(false);
+    if(userMarker){ map.removeLayer(userMarker); userMarker=null; }
+    if(pendingFly){ toast(`📍 You're ~${Math.round(dist).toLocaleString()} km from Ubud — your live pin appears once you reach Bali.`); pendingFly=false; }
+  }
+}
+function onErr(err){
+  if(pendingFly){
+    toast(err && err.code===1 ? 'Location permission denied — enable it in your browser to see where you are.' : 'Couldn’t get your location just now — try again in a moment.');
+    pendingFly=false;
+  }
+}
+function startTracking(userInitiated){
+  if(!('geolocation' in navigator)){ if(userInitiated) toast('Geolocation isn’t supported on this browser.'); return; }
+  if(userInitiated) pendingFly=true;
+  if(watchId!=null){
+    if(userInitiated){
+      if(userLatLng && haversineKm(userLatLng,UBUD_LL)<=BALI_RADIUS_KM){ map.flyTo(userLatLng,15,{animate:true,duration:1.2}); pendingFly=false; }
+      else navigator.geolocation.getCurrentPosition(onPos,onErr,{enableHighAccuracy:true,timeout:15000,maximumAge:0});
+    }
+    return;
+  }
+  watchId=navigator.geolocation.watchPosition(onPos,onErr,{enableHighAccuracy:true,maximumAge:30000,timeout:27000});
+}
+function onLocateClick(){ startTracking(true); }
+function initLocate(){
+  if(navigator.permissions && navigator.permissions.query){
+    navigator.permissions.query({name:'geolocation'}).then(s=>{ if(s.state==='granted') startTracking(false); }).catch(()=>{});
+  }
+}
+
 /* ── FIT BOUNDS ──────────────────────────────────────── */
 const bounds=L.latLngBounds(LOCS.map(l=>l.coords));
 map.fitBounds(bounds,{padding:[80,80]});
 
 /* ── KICK OFF PHOTO PRELOAD ──────────────────────────── */
 initVisited();
+initLocate();
 preloadPhotos();
 </script>
 </body>
