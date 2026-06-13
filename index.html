@@ -321,7 +321,51 @@
     /* numbered route pin badge */
     .pk-num { position:absolute; top:-5px; right:-5px; width:18px; height:18px; border-radius:50%; background:var(--gold-light); color:var(--jungle-dark); font-size:10px; font-weight:800; display:flex; align-items:center; justify-content:center; box-shadow:0 1px 5px rgba(0,0,0,.5); border:1.5px solid #5A3800; }
 
-    @media (max-width:720px){ #pkg{ width:210px; } }
+    /* mobile-only chrome hidden on desktop */
+    #mobile-bar, #drawer-backdrop, .drawer-x { display:none; }
+
+    @media (max-width:760px){
+      #hdr { height:auto; min-height:50px; padding:7px 12px; }
+      .hdr-title { font-size:16px; }
+      .hdr-sub { font-size:8px; letter-spacing:1.4px; margin-top:2px; }
+      .hdr-dates { display:none; }
+      .hdr-orb { width:30px; height:30px; font-size:14px; }
+
+      #ltog { top:56px; right:8px; bottom:auto; }
+      .lb { padding:7px 11px; font-size:10px; }
+
+      #pill { display:none; }
+      .leaflet-control-attribution { margin-bottom:56px; }
+
+      #leg {
+        top:0; left:0; bottom:0; right:auto;
+        width:86vw; max-width:330px; height:100%; max-height:100%;
+        border-radius:0 16px 16px 0;
+        transform:translateX(-105%); transition:transform .28s ease;
+        z-index:1200; padding-top:env(safe-area-inset-top,0px);
+      }
+      #leg.open { transform:none; }
+
+      #pkg {
+        top:0; right:0; bottom:auto; left:auto;
+        width:86vw; max-width:330px; height:100%; max-height:100%;
+        border-radius:16px 0 0 16px;
+        transform:translateX(105%); transition:transform .28s ease;
+        z-index:1200; padding-top:env(safe-area-inset-top,0px);
+      }
+      #pkg.open { transform:none; }
+      #pkg.collapsed #pkg-scroll, #pkg.collapsed #pkg-detail { display:block; }
+      #pkg-caret { display:none; }
+
+      .drawer-x { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:7px; font-size:14px; color:var(--cream); background:rgba(255,255,255,.08); cursor:pointer; flex-shrink:0; }
+
+      #drawer-backdrop { display:block; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:1100; opacity:0; pointer-events:none; transition:opacity .25s; }
+      #drawer-backdrop.show { opacity:1; pointer-events:auto; }
+
+      #mobile-bar { display:flex; gap:10px; position:fixed; left:0; right:0; bottom:0; z-index:1150; padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px)); background:linear-gradient(0deg, rgba(8,18,12,.97), rgba(8,18,12,0)); pointer-events:none; }
+      #mobile-bar .mbtn { pointer-events:auto; flex:1; padding:13px 10px; border-radius:12px; border:1px solid var(--gold-dim); background:rgba(11,28,18,.96); color:var(--gold); font-family:'Inter',sans-serif; font-size:13px; font-weight:600; display:flex; align-items:center; justify-content:center; gap:7px; box-shadow:0 4px 18px rgba(0,0,0,.45); }
+      body.drawer-open #mobile-bar { display:none; }
+    }
 
     /* ── VISITED STATE ── */
     .vk-badge { position:absolute; top:-5px; left:-5px; width:18px; height:18px; border-radius:50%; background:#2FAE5E; color:#fff; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; box-shadow:0 1px 5px rgba(0,0,0,.55); border:1.5px solid #0C2016; z-index:3; }
@@ -374,6 +418,7 @@
         <span class="an-btn" onclick="setAll(true)">All</span>
         <span class="an-btn" onclick="setAll(false)">None</span>
       </div>
+      <span class="drawer-x" onclick="closeDrawers()">✕</span>
     </div>
     <div class="cf" data-cat="signature" onclick="tog(this)">
       <div class="cf-dot" style="background:var(--sig)"></div>
@@ -433,6 +478,7 @@
   <div id="pkg-hdr" onclick="document.getElementById('pkg').classList.toggle('collapsed')">
     <div class="ph-l"><span class="ph-ico">🧭</span><span class="ph-ttl">Itineraries</span></div>
     <span id="pkg-caret">▾</span>
+    <span class="drawer-x" onclick="event.stopPropagation();closeDrawers()">✕</span>
   </div>
   <div id="pkg-detail"></div>
   <div id="pkg-scroll"><div id="pkg-list"></div></div>
@@ -443,6 +489,12 @@
   <div class="pi"><span class="pi-n">7</span><span class="pi-l">days</span></div>
   <div class="pi"><span class="pi-n">9</span><span class="pi-l">categories</span></div>
   <div class="pi"><span class="pi-n">Ubud</span><span class="pi-l">home base</span></div>
+</div>
+
+<div id="drawer-backdrop" onclick="closeDrawers()"></div>
+<div id="mobile-bar">
+  <button class="mbtn" onclick="openDrawer('leg')">☰&nbsp; Filters</button>
+  <button class="mbtn" onclick="openDrawer('pkg')">🧭&nbsp; Plans</button>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -1229,6 +1281,7 @@ map.on('popupopen', ()=>{
 function flyTo(id){
   const loc=LOCS.find(l=>l.id===id);
   if(!loc)return;
+  if(isMobile()) closeDrawers();
   map.flyTo(loc.coords,16,{animate:true,duration:1.2});
   setTimeout(()=>{ if(markerMap[id]) markerMap[id].openPopup(); },1400);
 }
@@ -1373,6 +1426,7 @@ function activatePkg(pid){
   document.querySelector(`.pk[data-pid="${pid}"]`)?.classList.add('active');
   renderDetail(pk);
   syncLabels();
+  if(isMobile()) closeDrawers();
 }
 
 (function buildPackages(){
@@ -1450,6 +1504,21 @@ function refreshVisibility(){
 function initVisited(){
   visited.forEach(id=>applyVisited(id));
   updateVisitedCount();
+}
+
+/* ── MOBILE DRAWERS ──────────────────────────────────── */
+function isMobile(){ return window.matchMedia('(max-width:760px)').matches; }
+function openDrawer(which){
+  closeDrawers();
+  document.getElementById(which==='leg'?'leg':'pkg').classList.add('open');
+  document.getElementById('drawer-backdrop').classList.add('show');
+  document.body.classList.add('drawer-open');
+}
+function closeDrawers(){
+  document.getElementById('leg').classList.remove('open');
+  document.getElementById('pkg').classList.remove('open');
+  document.getElementById('drawer-backdrop').classList.remove('show');
+  document.body.classList.remove('drawer-open');
 }
 
 /* ── FIT BOUNDS ──────────────────────────────────────── */
